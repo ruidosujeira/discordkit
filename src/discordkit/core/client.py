@@ -21,6 +21,7 @@ from typing import Any, Callable, TypeVar
 
 from pydantic import SecretStr
 
+from .cache import MemoryCache
 from ..commands.registry import CommandRegistry
 from ..commands.resolver import resolve_options
 from ..components.router import ComponentRouter
@@ -81,6 +82,10 @@ class Client:
 
         self.commands = CommandRegistry(client=self)
         self.components = ComponentRouter(client=self)
+        self.cache: MemoryCache = MemoryCache(default_ttl=300.0)  # 5 minutes default
+
+        # Auto-populate cache from resolved options (deeper integration)
+        self._auto_cache_enabled = True
 
         # Autocomplete handlers: (command_name, option_name) -> async callable
         self._autocomplete_handlers: dict[tuple[str, str], Any] = {}
@@ -173,6 +178,9 @@ class Client:
         self.user = User.model_validate(ready_data["user"])
         self.application_id = ready_data["application"]["id"]
 
+        if self._auto_cache_enabled:
+            self.cache.set_user(self.user)
+
         logger.info("Logged in as %s (id=%s)", self.user, self.user.id)
 
         # Register slash commands if any were added
@@ -245,7 +253,7 @@ class Client:
 
         # Resolve options using the *leaf* command's signature (critical for correct type hints)
         try:
-            resolved_opts = resolve_options(leaf_cmd, leaf_interaction_view)
+            resolved_opts = resolve_options(leaf_cmd, leaf_interaction_view, cache=self.cache)
         except Exception as exc:
             logger.exception("Failed to resolve options for %s: %s", full_path, exc)
             resolved_opts = {}
@@ -592,6 +600,19 @@ class Client:
 
     def get_guild(self, guild_id: int) -> Guild | None:
         return self._guilds.get(guild_id)
+
+    # --- Cache convenience methods (deep integration) ---
+
+    def get_cached_user(self, user_id: int) -> User | None:
+        """Fast path through cache."""
+        return self.cache.get_user(user_id)
+
+    def get_cached_member(self, guild_id: int, user_id: int) -> Member | None:
+        return self.cache.get_member(guild_id, user_id)
+
+    def invalidate_guild_cache(self, guild_id: int) -> int:
+        """Invalidate all cached data related to a guild."""
+        return self.cache.invalidate_by_guild(guild_id)
 
     @property
     def is_ready(self) -> bool:

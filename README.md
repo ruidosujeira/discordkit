@@ -226,4 +226,113 @@ MIT
 
 ---
 
+---
+
+## Advanced Features
+
+### Subcommands & Command Groups
+
+DiscordKit has first-class support for deeply nested command structures.
+
+```python
+@bot.group(name="admin", description="Administration")
+async def admin(ctx): ...
+
+@admin.command(name="ban", description="Ban a user")
+async def ban(ctx, user: Annotated[User, Option("User")], reason: str): ...
+
+# You can even nest groups
+@admin.group(name="config", description="Advanced configuration")
+async def config_group(ctx): ...
+
+@config_group.command(name="set", description="Set a value")
+async def set_value(ctx, key: str, value: str): ...
+```
+
+The framework correctly builds the Discord payload and routes interactions to the exact leaf handler.
+
+### Cache
+
+DiscordKit includes a simple but useful in-memory cache:
+
+```python
+# Automatically populated when resolving options
+user = ctx.options.get("user")   # This is a real User object
+
+# Manual usage
+bot.cache.set_user(some_user)
+cached = bot.cache.get_user(123456)
+bot.cache.invalidate_user(123456)
+
+# Members, Guilds and Channels are also supported
+bot.cache.set_member(member, guild_id=...)
+```
+
+You can configure default TTL on construction:
+
+```python
+bot = Client(config)
+bot.cache = MemoryCache(default_ttl=600)  # 10 minutes
+```
+
+### Rate Limit Handling
+
+The HTTP client handles Discord rate limits intelligently and transparently:
+
+- Detects `429` responses
+- Respects `X-RateLimit-Reset-After`, `X-RateLimit-Remaining`, global limits, etc.
+- Automatic backoff + retry (up to a safe limit)
+- Logs rate limit events
+
+You normally don't need to do anything — it just works.
+
+### Testing Your Bot
+
+DiscordKit ships with a professional test setup using `pytest` + `pytest-asyncio`.
+
+```bash
+# Run tests
+pytest
+
+# Or with coverage
+pytest --cov=src/discordkit
+```
+
+Key test areas covered out of the box:
+- Command definition and payload generation (including subcommands)
+- Complex option resolution (`User`, `Role`, etc.)
+- Full slash command routing
+- Component handlers
+- Error handling paths
+
+See the `tests/` directory for examples of unit-testing commands without a real Discord connection.
+
+---
+
+## Examples
+
+High-quality, real-world examples are available in the `examples/` folder:
+
+- `basic_bot.py` — Minimal getting started
+- `slash_commands.py` — Rich options + resolved objects + autocomplete
+- `subcommands.py` — Complete group and nested group demonstration
+- `moderation_bot.py` — Practical moderation commands with subcommands
+- `ticket_system.py` — Buttons + Modals + staff subcommands
+- `error_handling.py` — Production-grade error patterns
+- `component_bot.py` — Interactive components
+
+We recommend starting with `slash_commands.py` and `subcommands.py`.
+
+---
+
+## Production Tips
+
+- Always register at least one global error handler using `@bot.error_handler`
+- Use the built-in cache to reduce API calls
+- Run your bot with `discordkit run` during development
+- Enable `debug=True` only in development (via Config)
+- Monitor rate limit warnings in your logs
+
+---
+
 **Made with care for developers who care about their tools.**

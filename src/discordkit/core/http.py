@@ -16,6 +16,7 @@ interactions) are built on top of this.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -23,6 +24,7 @@ import httpx
 from pydantic import BaseModel
 
 from ..models.base import DiscordModel
+from .rate_limit import RateLimiter
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +59,7 @@ class DiscordHTTPClient:
     ) -> None:
         self._token = token
         self._base_url = base_url.rstrip("/")
+        self._rate_limiter = RateLimiter()
 
         headers = {
             "Authorization": f"Bot {token}",
@@ -73,6 +76,20 @@ class DiscordHTTPClient:
             http2=False,
         )
 
+    def _get_bucket_key(self, path: str) -> str:
+        """Generate a simple bucket key from the path.
+
+        Discord uses more sophisticated bucketing, but this provides a good
+        approximation for most common routes (per major resource).
+        """
+        # Normalize common routes for better bucketing
+        parts = [p for p in path.strip("/").split("/") if p]
+        if not parts:
+            return "root"
+        # Group by first two meaningful segments (e.g. /guilds/{id}/channels -> guilds/id)
+        key_parts = parts[:2]
+        return "/".join(key_parts)
+
     async def request(
         self,
         method: str,
@@ -81,14 +98,22 @@ class DiscordHTTPClient:
         json: dict[str, Any] | BaseModel | None = None,
         params: dict[str, Any] | None = None,
         expect_model: type[DiscordModel] | None = None,
+        _retry_count: int = 0,
     ) -> Any:
-        """Perform a raw request. Returns dict or validated Pydantic model."""
+        """Perform a raw request with intelligent rate limit handling.
+
+        Automatically respects Discord rate limits using headers and 429 responses.
+        Will back off and retry on rate limits (up to a reasonable limit).
+        """
         if isinstance(json, BaseModel):
             json = json.model_dump(mode="json", by_alias=True, exclude_none=True)
 
-        url = f"{self._base_url}{path}" if path.startswith("/") else f"{self._base_url}/{path}"
+        bucket = self._get_bucket_key(path)
 
-        logger.debug("HTTP %s %s", method, path)
+        # Wait for rate limit clearance if we know we're limited
+        await self._rate_limiter.acquire(bucket)
+
+        logger.debug("HTTP %s %s (bucket=%s)", method, path, bucket)
 
         resp = await self._client.request(
             method=method.upper(),
@@ -96,6 +121,48 @@ class DiscordHTTPClient:
             json=json,
             params=params,
         )
+
+        headers = dict(resp.headers)
+        body: dict[str, Any] | None = None
+
+        if resp.status_code == 429:
+            try:
+                body = resp.json()
+            except Exception:
+                body = {"message": resp.text}
+
+        # Always update rate limiter state
+        self._rate_limiter.update(headers, resp.status_code, body)
+
+        if resp.status_code == 429:
+            retry_after = 1.0
+            if body and isinstance(body.get("retry_after"), (int, float)):
+                retry_after = float(body["retry_after"])
+            elif "X-RateLimit-Reset-After" in headers:
+                try:
+                    retry_after = float(headers["X-RateLimit-Reset-After"])
+                except ValueError:
+                    pass
+
+            logger.warning(
+                "Rate limited on %s %s (global=%s). Backing off for %.2fs",
+                method, path, body.get("global") if body else False, retry_after
+            )
+
+            if _retry_count < 2:  # Allow up to 2 retries on rate limits
+                await asyncio.sleep(retry_after + 0.05)
+                return await self.request(
+                    method, path,
+                    json=json, params=params, expect_model=expect_model,
+                    _retry_count=_retry_count + 1
+                )
+            else:
+                # Give up after retries
+                try:
+                    data = body or resp.text
+                except Exception:
+                    data = resp.text
+                raise DiscordHTTPError(429, f"Rate limited after retries: {data}", data)
 
         if resp.status_code >= 400:
             try:

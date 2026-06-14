@@ -12,11 +12,14 @@ was declared as `user: Annotated[User, Option(...)]`.
 from __future__ import annotations
 
 import inspect
-from typing import Any, get_type_hints
+from typing import TYPE_CHECKING, Any, get_type_hints
 
 from ..models import Attachment, Channel, Member, Role, User
 from ..types import ApplicationCommandOptionType
 from .command import Command
+
+if TYPE_CHECKING:
+    from ..core.cache import MemoryCache
 
 # Map Discord option type -> model (for resolution)
 _OPTION_TYPE_TO_MODEL: dict[int, type] = {
@@ -63,12 +66,18 @@ def _is_member_type(ann: Any) -> bool:
     return base is Member or (isinstance(base, type) and issubclass(base, Member))
 
 
-def resolve_options(command: Command, interaction: dict[str, Any]) -> dict[str, Any]:
+def resolve_options(
+    command: Command,
+    interaction: dict[str, Any],
+    *,
+    cache: "MemoryCache | None" = None,
+) -> dict[str, Any]:
     """
     Resolve the options from a raw APPLICATION_COMMAND interaction into
     a clean dict of name -> value (with models where appropriate).
 
     Uses the command's callback type hints + the "resolved" object provided by Discord.
+    If a cache is provided, resolved objects are automatically stored in it.
     """
     data = interaction.get("data", {}) or {}
     raw_options = data.get("options", []) or []
@@ -114,10 +123,17 @@ def resolve_options(command: Command, interaction: dict[str, Any]) -> dict[str, 
                 member_full = {**member_data, "user": user_data}
                 try:
                     value = Member.model_validate(member_full)
+                    if cache and hasattr(value, "user") and value.user:
+                        cache.set_user(value.user)
+                    if cache:
+                        # We don't have guild_id here easily; caller can set_member if needed
+                        pass
                 except Exception:
                     value = User.model_validate(user_data) if user_data else raw_value
             elif user_data:
                 value = User.model_validate(user_data)
+                if cache:
+                    cache.set_user(value)
             # else: keep raw id as fallback
 
         elif model_cls is not None:
@@ -126,6 +142,20 @@ def resolve_options(command: Command, interaction: dict[str, Any]) -> dict[str, 
             if resolved_obj:
                 try:
                     value = model_cls.model_validate(resolved_obj)
+                    if cache:
+                        if isinstance(value, User):
+                            cache.set_user(value)
+                        elif isinstance(value, Member):
+                            # Best effort; guild_id may be available in interaction
+                            guild_id = interaction.get("guild_id")
+                            if guild_id:
+                                cache.set_member(value, int(guild_id))
+                        elif isinstance(value, (Channel, Guild)):
+                            # Generic set
+                            if hasattr(cache, "set_channel") and isinstance(value, Channel):
+                                cache.set_channel(value)
+                            elif hasattr(cache, "set_guild") and isinstance(value, Guild):
+                                cache.set_guild(value)
                 except Exception:
                     # Fallback to raw if validation fails
                     pass

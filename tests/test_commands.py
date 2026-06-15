@@ -61,7 +61,7 @@ class TestPayloadGeneration:
 
         age_opt = options[1]
         assert age_opt["required"] is False
-        assert age_opt["min_value"] is None
+        assert "min_value" not in age_opt  # omitted when unset (Discord API convention)
 
     def test_discord_type_resolution(self):
         async def cmd(ctx, user: Annotated[User, Option("Target user")]):

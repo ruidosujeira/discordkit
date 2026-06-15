@@ -21,11 +21,11 @@ from typing import Any, Callable, TypeVar
 
 from pydantic import SecretStr
 
-from .cache import MemoryCache
+from .cache import CacheBackend, MemoryCache
 from ..commands.registry import CommandRegistry
 from ..commands.resolver import resolve_options
 from ..components.router import ComponentRouter
-from ..models import Guild, Member, User
+from ..models import Channel, Guild, Member, User
 from ..types import Intents, InteractionType
 from .config import Config
 from .context import AutocompleteContext, CommandContext, Context
@@ -82,9 +82,13 @@ class Client:
 
         self.commands = CommandRegistry(client=self)
         self.components = ComponentRouter(client=self)
-        self.cache: MemoryCache = MemoryCache(default_ttl=300.0)  # 5 minutes default
+        self.cache: CacheBackend = MemoryCache(
+            default_ttl=300.0,
+            max_size=10_000,
+            touch_on_read=True,
+        )
 
-        # Auto-populate cache from resolved options (deeper integration)
+        # Auto-populate cache from resolved slash-command options
         self._auto_cache_enabled = True
 
         # Autocomplete handlers: (command_name, option_name) -> async callable
@@ -601,18 +605,118 @@ class Client:
     def get_guild(self, guild_id: int) -> Guild | None:
         return self._guilds.get(guild_id)
 
-    # --- Cache convenience methods (deep integration) ---
+    # ------------------------------------------------------------------
+    # Cache integration
+    # ------------------------------------------------------------------
+
+    def configure_cache(
+        self,
+        *,
+        default_ttl: float | None = None,
+        max_size: int | None = None,
+        touch_on_read: bool | None = None,
+        ttl_by_type: dict[str, float] | None = None,
+        backend: CacheBackend | None = None,
+        persistent: bool = False,
+        cache_path: str | None = None,
+    ) -> None:
+        """Configure or replace the client cache.
+
+        Pass a custom ``backend`` to use Redis or another ``CacheBackend``
+        implementation. When ``backend`` is omitted, a new :class:`MemoryCache`
+        (or :class:`PersistentCache` when ``persistent=True``) is built from
+        the provided options.
+
+        Example::
+
+            bot.configure_cache(
+                default_ttl=600,
+                max_size=20_000,
+                touch_on_read=True,
+                ttl_by_type={"member": 120, "guild": 1800},
+            )
+
+            # Survive restarts with SQLite persistence:
+            bot.configure_cache(persistent=True, cache_path=".data/bot_cache.db")
+        """
+        if backend is not None:
+            self.cache = backend
+            return
+
+        from .cache import EvictionPolicy
+
+        kwargs: dict[str, Any] = {
+            "eviction_policy": EvictionPolicy.LRU,
+            "touch_on_read": touch_on_read if touch_on_read is not None else True,
+        }
+        if default_ttl is not None:
+            kwargs["default_ttl"] = default_ttl
+        if max_size is not None:
+            kwargs["max_size"] = max_size
+        if ttl_by_type is not None:
+            kwargs["ttl_by_type"] = ttl_by_type
+
+        if persistent:
+            from .cache_persistent import PersistentCache
+
+            path = cache_path or ".discordkit_cache.db"
+            self.cache = PersistentCache(path=path, **kwargs)
+        else:
+            self.cache = MemoryCache(**kwargs)
+
+    @property
+    def auto_cache(self) -> bool:
+        """Whether resolved slash-command options are stored automatically."""
+        return self._auto_cache_enabled
+
+    @auto_cache.setter
+    def auto_cache(self, enabled: bool) -> None:
+        self._auto_cache_enabled = enabled
 
     def get_cached_user(self, user_id: int) -> User | None:
-        """Fast path through cache."""
+        """Return a cached :class:`~discordkit.models.User`, if present."""
         return self.cache.get_user(user_id)
 
     def get_cached_member(self, guild_id: int, user_id: int) -> Member | None:
+        """Return a cached :class:`~discordkit.models.Member`, if present."""
         return self.cache.get_member(guild_id, user_id)
 
+    def get_cached_guild(self, guild_id: int) -> Guild | None:
+        """Return a cached :class:`~discordkit.models.Guild`, if present."""
+        return self.cache.get_guild(guild_id)
+
+    def get_cached_channel(self, channel_id: int) -> Channel | None:
+        """Return a cached :class:`~discordkit.models.Channel`, if present."""
+        return self.cache.get_channel(channel_id)
+
+    async def fetch_user_cached(
+        self,
+        user_id: int,
+        fetcher: Callable[[], User | None | Any],
+        *,
+        ttl: float | None = None,
+    ) -> User | None:
+        """Cache-aside helper: return cached user or call ``fetcher`` on miss."""
+        return await self.cache.get_or_fetch_user(user_id, fetcher, ttl=ttl)
+
+    async def fetch_member_cached(
+        self,
+        guild_id: int,
+        user_id: int,
+        fetcher: Callable[[], Member | None | Any],
+        *,
+        ttl: float | None = None,
+    ) -> Member | None:
+        """Cache-aside helper: return cached member or call ``fetcher`` on miss."""
+        return await self.cache.get_or_fetch_member(guild_id, user_id, fetcher, ttl=ttl)
+
     def invalidate_guild_cache(self, guild_id: int) -> int:
-        """Invalidate all cached data related to a guild."""
+        """Invalidate all cached members for a guild."""
         return self.cache.invalidate_by_guild(guild_id)
+
+    def cache_stats(self):
+        """Return a snapshot of cache hit/miss/eviction statistics."""
+        return self.cache.stats()
 
     @property
     def is_ready(self) -> bool:

@@ -19,7 +19,7 @@ from ..types import ApplicationCommandOptionType
 from .command import Command
 
 if TYPE_CHECKING:
-    from ..core.cache import MemoryCache
+    from ..core.cache import CacheBackend
 
 # Map Discord option type -> model (for resolution)
 _OPTION_TYPE_TO_MODEL: dict[int, type] = {
@@ -70,7 +70,7 @@ def resolve_options(
     command: Command,
     interaction: dict[str, Any],
     *,
-    cache: "MemoryCache | None" = None,
+    cache: "CacheBackend | None" = None,
 ) -> dict[str, Any]:
     """
     Resolve the options from a raw APPLICATION_COMMAND interaction into

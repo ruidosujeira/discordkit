@@ -29,11 +29,12 @@ Example:
 
 from __future__ import annotations
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "DiscordKit Contributors"
 
 # Core exports - the main public API surface
-from .core.cache import CacheBackend, CacheStats, MemoryCache
+from .core.cache import CacheBackend, CacheStats, EvictionPolicy, MemoryCache
+from .core.cache_persistent import PersistentCache
 from .core.client import Client
 from .core.config import Config
 from .core.context import AutocompleteContext, Context, InteractionContext
@@ -90,8 +91,10 @@ __all__ = [
     "InteractionContext",
     "AutocompleteContext",
     "MemoryCache",
+    "PersistentCache",
     "CacheBackend",
     "CacheStats",
+    "EvictionPolicy",
     "GatewayEvent",
     # Commands
     "Command",

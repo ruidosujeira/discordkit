@@ -102,6 +102,9 @@ class Option:
         ):
             raise ValueError("min_value cannot be greater than max_value")
 
+        if self.choices and self.autocomplete:
+            raise ValueError("cannot use both choices and autocomplete")
+
     @staticmethod
     def _normalize_choices(raw: Sequence[Any]) -> list[dict[str, Any]]:
         normalized: list[dict[str, Any]] = []
@@ -136,7 +139,7 @@ class Option:
 # =============================================================================
 
 import inspect
-from typing import TYPE_CHECKING, Any, get_args, get_origin, get_type_hints
+from typing import TYPE_CHECKING, Any, Callable, get_args, get_origin, get_type_hints
 
 if TYPE_CHECKING:
     from ..models import Attachment, Channel, Member, Message, Role, User

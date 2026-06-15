@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "discordkit"
-version = "0.1.0"
+version = "0.2.0"
 description = "DiscordKit - A modern, strongly-typed Python framework for Discord with excellent DX"
 readme = "README.md"
 license = {text = "MIT"}
@@ -14,7 +14,7 @@ authors = [
 ]
 keywords = ["discord", "bot", "framework", "api", "asyncio", "pydantic"]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",

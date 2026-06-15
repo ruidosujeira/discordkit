@@ -8,7 +8,7 @@ from typing import Annotated
 
 import pytest
 
-from discordkit.cache import MemoryCache
+from discordkit.core.cache import MemoryCache
 from discordkit.commands import Option, command, resolve_options
 from discordkit.models import User
 from discordkit.types import ApplicationCommandOptionType

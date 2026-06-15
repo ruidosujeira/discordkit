@@ -91,6 +91,7 @@ class RateLimiter:
             pass
 
         # Handle 429 specially (body may contain retry_after)
+        rate_limited_bucket: str | None = None
         if status_code == 429 and body:
             retry_after = body.get("retry_after")
             if retry_after is not None:
@@ -99,6 +100,7 @@ class RateLimiter:
                     self._global_reset = reset_time
                     logger.warning("Global rate limit triggered. Retry after %.2fs", retry_after)
                 elif info.bucket:
+                    rate_limited_bucket = info.bucket
                     self._buckets[info.bucket] = RateLimitInfo(
                         reset=reset_time,
                         remaining=0,
@@ -106,10 +108,9 @@ class RateLimiter:
                     )
                     logger.warning("Bucket %s rate limited. Retry after %.2fs", info.bucket, retry_after)
 
-        # Update bucket info from headers if we have a bucket
-        if info.bucket:
+        # Update bucket info from headers (skip when 429 already set retry state)
+        if info.bucket and info.bucket != rate_limited_bucket:
             if info.reset_after is not None:
-                # Convert reset_after to absolute monotonic time
                 info.reset = time.monotonic() + info.reset_after
             self._buckets[info.bucket] = info
 

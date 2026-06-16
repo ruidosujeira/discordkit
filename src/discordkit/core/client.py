@@ -180,7 +180,8 @@ class Client:
     async def _handle_ready(self, ready_data: dict[str, Any]) -> None:
         """Process the READY payload and populate client state."""
         self.user = User.model_validate(ready_data["user"])
-        self.application_id = ready_data["application"]["id"]
+        # Discord sends snowflakes as strings; keep application_id a real int.
+        self.application_id = int(ready_data["application"]["id"])
 
         if self._auto_cache_enabled:
             self.cache.set_user(self.user)

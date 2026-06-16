@@ -27,6 +27,7 @@ from typing import Any, Awaitable, Callable, Protocol
 
 import websockets
 from websockets.asyncio.client import ClientConnection
+from websockets.protocol import State
 
 from ..types import Intents
 
@@ -91,7 +92,7 @@ class Gateway:
 
     @property
     def is_connected(self) -> bool:
-        return self._ws is not None and not self._ws.closed
+        return self._ws is not None and self._ws.state is State.OPEN
 
     async def connect(self) -> None:
         """Open the websocket and start the receive loop."""
@@ -139,6 +140,8 @@ class Gateway:
                 logger.info("Gateway READY - session %s", self._session_id)
                 if self._on_ready:
                     await self._on_ready(event.d)
+                # Unblock anything waiting on wait_until_ready().
+                self._ready.set()
             if self._on_event:
                 await self._on_event(event)
         elif event.op == GatewayOpcode.INVALID_SESSION:
@@ -186,7 +189,7 @@ class Gateway:
             await asyncio.sleep(self._heartbeat_interval)
 
     async def _send(self, data: dict[str, Any]) -> None:
-        if not self._ws or self._ws.closed:
+        if not self._ws or self._ws.state is not State.OPEN:
             logger.warning("Attempted to send on closed gateway")
             return
         await self._ws.send(json.dumps(data))

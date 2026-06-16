@@ -31,13 +31,12 @@ The router supports:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Awaitable, Callable
+from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING, Any
 
 from .context import (
-    ButtonContext,
     ComponentContext,
     ModalContext,
-    SelectContext,
     build_component_context,
 )
 
@@ -139,18 +138,22 @@ class ComponentRouter:
 
             logger.debug(
                 "Dispatching component custom_id=%r (matched %r) to %s",
-                custom_id, registered_id, handler.__name__
+                custom_id,
+                registered_id,
+                handler.__name__,
             )
             try:
                 result = handler(ctx)
                 if result is not None:
-                    await result  # type: ignore[misc]
+                    await result
             except Exception as exc:
                 logger.exception("Error in component handler %r: %s", handler.__name__, exc)
                 # Best effort: tell the user something went wrong
                 try:
                     if not ctx._responded:
-                        await ctx.respond("Something went wrong while handling this interaction.", ephemeral=True)
+                        await ctx.respond(
+                            "Something went wrong while handling this interaction.", ephemeral=True
+                        )
                 except Exception:
                     pass
             return True
@@ -165,7 +168,9 @@ class ComponentRouter:
 
             logger.debug(
                 "Dispatching modal custom_id=%r (matched %r) to %s",
-                custom_id, registered_id, handler.__name__
+                custom_id,
+                registered_id,
+                handler.__name__,
             )
             try:
                 result = handler(ctx)
@@ -175,7 +180,9 @@ class ComponentRouter:
                 logger.exception("Error in modal handler %r: %s", handler.__name__, exc)
                 try:
                     if not ctx._responded:
-                        await ctx.respond("Something went wrong while processing the form.", ephemeral=True)
+                        await ctx.respond(
+                            "Something went wrong while processing the form.", ephemeral=True
+                        )
                 except Exception:
                     pass
             return True
@@ -189,4 +196,4 @@ class ComponentRouter:
         )
 
 
-__all__ = ["ComponentRouter", "ComponentContext", "ModalContext"]
+__all__ = ["ComponentContext", "ComponentRouter", "ModalContext"]

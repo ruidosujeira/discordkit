@@ -43,6 +43,8 @@ dev = [
     "mypy>=1.10.0",
     "pytest>=8.2.0",
     "pytest-asyncio>=0.23.0",
+    "pytest-cov>=5.0.0",
+    "pre-commit>=3.7.0",
     "types-python-dateutil",
 ]
 
@@ -97,4 +99,55 @@ dev-dependencies = [
     "mypy>=1.10.0",
     "pytest>=8.2.0",
     "pytest-asyncio>=0.23.0",
+    "pytest-cov>=5.0.0",
+    "pre-commit>=3.7.0",
+    "types-python-dateutil",
 ]
+
+[tool.uv.scripts]
+# Convenience commands for development
+pre-commit-install = "pre-commit install"
+lint = "ruff check ."
+lint-fix = "ruff check . --fix"
+format-check = "ruff format --check ."
+typecheck = "mypy src/discordkit"
+test = "pytest"
+test-cov = "pytest --cov=src/discordkit --cov-report=term-missing"
+checks = { chain = ["lint", "format-check", "typecheck", "test"] }
+```
+
+Great, now contributors can do `uv run pre-commit-install` and `uv run checks`.
+
+Now, update the README.
+
+I need to:
+
+1. Update the Table of Contents to include the new section.
+
+2. Insert a solid **Contributing** section before the License.
+
+I'll add the TOC entry after "Testing Your Bot" or after "Examples". Let's put it after "Examples" and before "Roadmap & Philosophy".
+
+Current TOC ends with:
+
+- [Testing](#testing-your-bot)
+
+- [Examples](#examples)
+
+- [Roadmap & Philosophy](#roadmap--philosophy)
+
+- [License](#license)
+
+I'll insert:
+
+- [Contributing](#contributing)
+
+After Examples.
+
+For the actual section content, make it clear, direct, and useful.
+
+I'll place the new section right before `## License`.
+
+To do the edits, I'll use search_replace for TOC and then a larger insert for the section.
+
+First, update TOC.

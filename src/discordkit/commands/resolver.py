@@ -11,10 +11,9 @@ was declared as `user: Annotated[User, Option(...)]`.
 
 from __future__ import annotations
 
-import inspect
 from typing import TYPE_CHECKING, Any, get_type_hints
 
-from ..models import Attachment, Channel, Member, Role, User
+from ..models import Attachment, Channel, Guild, Member, Role, User
 from ..types import ApplicationCommandOptionType
 from .command import Command
 
@@ -55,7 +54,8 @@ def _is_member_type(ann: Any) -> bool:
     """Check if the annotation wants a Member (or Optional[Member])."""
     base = _unwrap_annotated(ann)
     # Handle Optional
-    from typing import get_origin, get_args
+    from typing import get_args, get_origin
+
     origin = get_origin(base)
     if origin is not None:
         # Union / | None
@@ -70,7 +70,7 @@ def resolve_options(
     command: Command,
     interaction: dict[str, Any],
     *,
-    cache: "CacheBackend | None" = None,
+    cache: CacheBackend | None = None,
 ) -> dict[str, Any]:
     """
     Resolve the options from a raw APPLICATION_COMMAND interaction into
@@ -92,12 +92,13 @@ def resolve_options(
     result: dict[str, Any] = {}
 
     for opt in flat_options:
-        name: str = opt.get("name")
+        name: str | None = opt.get("name")
         raw_value: Any = opt.get("value")
         discord_type: int = opt.get("type", 0)
 
         if not name:
             continue
+        name = str(name)  # ensure str for result key
 
         # Start with the raw value (good for str/int/bool/float)
         value: Any = raw_value
@@ -110,7 +111,9 @@ def resolve_options(
         model_cls = _OPTION_TYPE_TO_MODEL.get(discord_type)
 
         # Special handling for users (can become Member in guild context)
-        if discord_type == ApplicationCommandOptionType.USER or (base_type and (base_type is User or base_type is Member)):
+        if discord_type == ApplicationCommandOptionType.USER or (
+            base_type and (base_type is User or base_type is Member)
+        ):
             user_id = str(raw_value)
             users = resolved.get("users", {}) or {}
             members = resolved.get("members", {}) or {}
@@ -141,7 +144,7 @@ def resolve_options(
             resolved_obj = (resolved.get(key, {}) or {}).get(str(raw_value))
             if resolved_obj:
                 try:
-                    value = model_cls.model_validate(resolved_obj)
+                    value = model_cls.model_validate(resolved_obj)  # type: ignore[attr-defined]
                     if cache:
                         if isinstance(value, User):
                             cache.set_user(value)

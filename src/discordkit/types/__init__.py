@@ -9,12 +9,13 @@ All public types here should be safe for end-users to import and use in annotati
 
 from __future__ import annotations
 
-from enum import IntEnum, IntFlag, StrEnum
+from enum import IntEnum, IntFlag
 from typing import Literal
 
 # =============================================================================
 # Gateway Intents (bitfield)
 # =============================================================================
+
 
 class Intents(IntFlag):
     """Discord Gateway Intents.
@@ -75,6 +76,7 @@ class Intents(IntFlag):
 # Permissions (bitfield)
 # =============================================================================
 
+
 class Permissions(IntFlag):
     """Discord permission flags (bitfield)."""
 
@@ -134,6 +136,7 @@ class Permissions(IntFlag):
 # Application Command Types
 # =============================================================================
 
+
 class ApplicationCommandType(IntEnum):
     """Types of application commands (slash, user, message)."""
 
@@ -162,6 +165,7 @@ class ApplicationCommandOptionType(IntEnum):
 # Component Types (for buttons, modals, etc.)
 # =============================================================================
 
+
 class ComponentType(IntEnum):
     """Message component types."""
 
@@ -188,6 +192,7 @@ class ButtonStyle(IntEnum):
 # =============================================================================
 # Interaction Types
 # =============================================================================
+
 
 class InteractionType(IntEnum):
     """Types of incoming interactions from Discord."""
@@ -216,17 +221,50 @@ class InteractionResponseType(IntEnum):
 # =============================================================================
 
 ChannelType = Literal[0, 1, 2, 3, 4, 5, 10, 11, 12, 13, 14, 15]
-MessageType = Literal[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
+MessageType = Literal[
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+]
 
 __all__ = [
-    "Intents",
-    "Permissions",
-    "ApplicationCommandType",
     "ApplicationCommandOptionType",
-    "ComponentType",
+    "ApplicationCommandType",
     "ButtonStyle",
-    "InteractionType",
-    "InteractionResponseType",
     "ChannelType",
+    "ComponentType",
+    "Intents",
+    "InteractionResponseType",
+    "InteractionType",
     "MessageType",
+    "Permissions",
 ]

@@ -14,19 +14,19 @@ from __future__ import annotations
 from .context import (
     ButtonContext,
     ComponentContext,
+    InteractionContext,  # re-export for convenience
     ModalContext,
     SelectContext,
     build_component_context,
-    InteractionContext,  # re-export for convenience
 )
 from .router import ComponentRouter
 
 __all__ = [
-    "ComponentRouter",
-    "ComponentContext",
     "ButtonContext",
-    "SelectContext",
-    "ModalContext",
-    "build_component_context",
+    "ComponentContext",
+    "ComponentRouter",
     "InteractionContext",
+    "ModalContext",
+    "SelectContext",
+    "build_component_context",
 ]

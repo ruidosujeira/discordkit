@@ -44,7 +44,7 @@ class Guild(DiscordModel):
 
     # Populated in certain events
     members: list[Member] = Field(default_factory=list)
-    channels: list["Channel"] = Field(default_factory=list)  # forward ref
+    channels: list[Channel] = Field(default_factory=list)  # forward ref
 
     @property
     def icon_url(self) -> str | None:
@@ -95,4 +95,4 @@ class Channel(DiscordModel):
 Guild.model_rebuild()
 Channel.model_rebuild()
 
-__all__ = ["Guild", "Channel"]
+__all__ = ["Channel", "Guild"]

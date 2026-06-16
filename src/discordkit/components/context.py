@@ -11,11 +11,14 @@ beautiful response API: respond, defer, followup, edit_response, edit_message.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ..core.context import InteractionContext
-from ..models import Guild, Member, Message, User
+from ..models import Member, Message, User
 from ..types import ComponentType, InteractionType
+
+if TYPE_CHECKING:
+    from ..core.client import Client
 
 
 @dataclass(slots=True)
@@ -71,8 +74,7 @@ class SelectContext(ComponentContext):
 
     def __repr__(self) -> str:
         return (
-            f"SelectContext(custom_id={self.custom_id!r}, "
-            f"values={self.values}, user={self.user})"
+            f"SelectContext(custom_id={self.custom_id!r}, values={self.values}, user={self.user})"
         )
 
 
@@ -98,7 +100,7 @@ class ModalContext(InteractionContext):
 
 
 def build_component_context(
-    client: "Client",
+    client: Client,
     interaction: dict[str, Any],
 ) -> ComponentContext | ModalContext:
     """Factory that builds the right context object from a raw INTERACTION_CREATE payload.
@@ -116,9 +118,6 @@ def build_component_context(
 
     member_data = interaction.get("member")
     member = Member.model_validate(member_data) if member_data else None
-
-    guild_id = interaction.get("guild_id")
-    # We don't fetch full guild here for performance; user can do it if needed
 
     channel_id = interaction.get("channel_id")
     message_data = interaction.get("message")
@@ -168,7 +167,7 @@ def build_component_context(
     )
 
     if component_type == ComponentType.BUTTON:
-        return ButtonContext(**base.__dict__)  # type: ignore[arg-type]
+        return ButtonContext(**base.__dict__)
     if component_type in (
         ComponentType.STRING_SELECT,
         ComponentType.USER_SELECT,
@@ -176,16 +175,16 @@ def build_component_context(
         ComponentType.MENTIONABLE_SELECT,
         ComponentType.CHANNEL_SELECT,
     ):
-        return SelectContext(**base.__dict__)  # type: ignore[arg-type]
+        return SelectContext(**base.__dict__)
 
     return base
 
 
 __all__ = [
-    "InteractionContext",
-    "ComponentContext",
     "ButtonContext",
-    "SelectContext",
+    "ComponentContext",
+    "InteractionContext",
     "ModalContext",
+    "SelectContext",
     "build_component_context",
 ]

@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 @dataclass(slots=True)
 class RateLimitInfo:
     """Parsed rate limit information from Discord headers."""
+
     limit: int | None = None
     remaining: int | None = None
     reset: float | None = None
@@ -69,7 +70,9 @@ class RateLimiter:
                         logger.info("Rate limit for bucket %s. Waiting %.2fs", bucket, wait)
                         await asyncio.sleep(wait)
 
-    def update(self, headers: dict[str, str], status_code: int, body: dict[str, Any] | None = None) -> RateLimitInfo:
+    def update(
+        self, headers: dict[str, str], status_code: int, body: dict[str, Any] | None = None
+    ) -> RateLimitInfo:
         """Update rate limit state from response headers."""
         info = RateLimitInfo()
 
@@ -106,7 +109,9 @@ class RateLimiter:
                         remaining=0,
                         bucket=info.bucket,
                     )
-                    logger.warning("Bucket %s rate limited. Retry after %.2fs", info.bucket, retry_after)
+                    logger.warning(
+                        "Bucket %s rate limited. Retry after %.2fs", info.bucket, retry_after
+                    )
 
         # Update bucket info from headers (skip when 429 already set retry state)
         if info.bucket and info.bucket != rate_limited_bucket:
@@ -120,4 +125,4 @@ class RateLimiter:
         return self._buckets.get(bucket)
 
 
-__all__ = ["RateLimiter", "RateLimitInfo"]
+__all__ = ["RateLimitInfo", "RateLimiter"]

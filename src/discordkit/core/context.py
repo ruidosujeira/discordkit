@@ -194,7 +194,7 @@ class InteractionContext:
                 )
             return
 
-        body: dict[str, Any] = {}
+        body: dict[str, Any] = {}  # type: ignore[no-redef]
         if content is not None:
             body["content"] = content
         if embed:
@@ -227,7 +227,8 @@ class Context:
 
     async def fetch_channel(self, channel_id: int) -> dict[str, Any]:
         """Low-level channel fetch (expand with proper model later)."""
-        return await self.http.request("GET", f"/channels/{channel_id}")
+        result: Any = await self.http.request("GET", f"/channels/{channel_id}")
+        return result  # type: ignore[no-any-return]
 
 
 @dataclass(slots=True)
@@ -244,8 +245,7 @@ class CommandContext(InteractionContext):
 
     def __repr__(self) -> str:
         return (
-            f"CommandContext(command={self.command_name!r}, "
-            f"user={self.user}, guild={self.guild})"
+            f"CommandContext(command={self.command_name!r}, user={self.user}, guild={self.guild})"
         )
 
 
@@ -261,7 +261,7 @@ class AutocompleteContext(InteractionContext):
     option_name: str = ""
     value: str = ""  # The current partial text the user has typed
 
-    async def respond(self, choices: list[dict[str, Any]]) -> None:
+    async def respond(self, choices: list[dict[str, Any]]) -> None:  # type: ignore[override]
         """Send autocomplete suggestions back to Discord.
 
         choices: list of {"name": str, "value": str | int | float}
@@ -278,12 +278,12 @@ class AutocompleteContext(InteractionContext):
             self.interaction_token,
             payload=payload,
         )
-        self._responded = True  # type: ignore[attr-defined]
+        self._responded = True
 
 
 __all__ = [
+    "AutocompleteContext",
+    "CommandContext",
     "Context",
     "InteractionContext",
-    "CommandContext",
-    "AutocompleteContext",
 ]

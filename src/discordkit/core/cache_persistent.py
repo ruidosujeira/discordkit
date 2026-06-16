@@ -137,7 +137,7 @@ class PersistentCache(MemoryCache):
             return json.dumps(value)
         model = _ENTITY_MODELS.get(entity_type)
         if model is not None and isinstance(value, model):
-            return value.model_dump_json()
+            return value.model_dump_json()  # type: ignore[no-any-return,attr-defined]
         raise TypeError(f"Cannot serialize {type(value)!r} for entity type {entity_type!r}")
 
     def _deserialize(self, entity_type: str, raw: str) -> Any:
@@ -206,13 +206,17 @@ class PersistentCache(MemoryCache):
             with self._lock:
                 for entity_type, primary, secondary, value_json, expires_at, last_accessed in rows:
                     if expires_at is not None and now >= expires_at:
-                        expired_keys.append((entity_type, _decode_key(entity_type, primary, secondary)))
+                        expired_keys.append(
+                            (entity_type, _decode_key(entity_type, primary, secondary))
+                        )
                         continue
 
                     try:
                         value = self._deserialize(entity_type, value_json)
                     except Exception:
-                        expired_keys.append((entity_type, _decode_key(entity_type, primary, secondary)))
+                        expired_keys.append(
+                            (entity_type, _decode_key(entity_type, primary, secondary))
+                        )
                         continue
 
                     key = _decode_key(entity_type, primary, secondary)
@@ -304,7 +308,9 @@ class PersistentCache(MemoryCache):
         """Reclaim disk space and remove expired rows from SQLite."""
         now = time.monotonic()
         with self._connect() as conn:
-            conn.execute("DELETE FROM cache_entries WHERE expires_at IS NOT NULL AND expires_at < ?", (now,))
+            conn.execute(
+                "DELETE FROM cache_entries WHERE expires_at IS NOT NULL AND expires_at < ?", (now,)
+            )
             conn.execute("VACUUM")
 
 

@@ -7,9 +7,9 @@ Minimal Role model for use in command options (and future guild features).
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
-from pydantic import Field
+from pydantic import ConfigDict
 
 from .base import DiscordModel
 
@@ -36,7 +36,7 @@ class Role(DiscordModel):
     def __str__(self) -> str:
         return self.name
 
-    model_config = {
+    model_config: ClassVar[ConfigDict] = {
         **DiscordModel.model_config,
         "frozen": True,
     }

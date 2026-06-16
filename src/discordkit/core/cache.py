@@ -25,9 +25,10 @@ import threading
 import time
 from abc import ABC, abstractmethod
 from collections import OrderedDict
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Awaitable, Callable, Generic, TypeVar
+from enum import StrEnum
+from typing import Any, TypeVar
 
 from ..models import Channel, Guild, Member, User
 
@@ -43,7 +44,7 @@ ENTITY_GENERIC = "generic"
 CacheKey = tuple[str, Any]
 
 
-class EvictionPolicy(str, Enum):
+class EvictionPolicy(StrEnum):
     """Strategy used when the cache reaches ``max_size``."""
 
     NONE = "none"
@@ -55,10 +56,10 @@ class EvictionPolicy(str, Enum):
 
 # Sensible per-entity TTL defaults (seconds). Override via ``ttl_by_type`` on construction.
 DEFAULT_TTL_BY_TYPE: dict[str, float] = {
-    ENTITY_USER: 600.0,      # users change infrequently
-    ENTITY_MEMBER: 300.0,    # nicknames/roles change more often
-    ENTITY_GUILD: 900.0,     # guild metadata is relatively stable
-    ENTITY_CHANNEL: 300.0,   # channel names/topics can change
+    ENTITY_USER: 600.0,  # users change infrequently
+    ENTITY_MEMBER: 300.0,  # nicknames/roles change more often
+    ENTITY_GUILD: 900.0,  # guild metadata is relatively stable
+    ENTITY_CHANNEL: 300.0,  # channel names/topics can change
     ENTITY_GENERIC: 300.0,
 }
 
@@ -99,7 +100,7 @@ class CacheStats:
 
 
 @dataclass(slots=True)
-class _CacheEntry(Generic[T]):
+class _CacheEntry[T]:
     """Internal wrapper storing a value, expiry, and LRU metadata."""
 
     value: T
@@ -810,14 +811,14 @@ class MemoryCache(CacheBackend):
 
 
 __all__ = [
-    "CacheBackend",
-    "CacheStats",
     "DEFAULT_TTL_BY_TYPE",
     "ENTITY_CHANNEL",
     "ENTITY_GENERIC",
     "ENTITY_GUILD",
     "ENTITY_MEMBER",
     "ENTITY_USER",
+    "CacheBackend",
+    "CacheStats",
     "EvictionPolicy",
     "MemoryCache",
 ]

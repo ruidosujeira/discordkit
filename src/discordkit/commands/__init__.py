@@ -14,23 +14,25 @@ Core ideas:
 
 from __future__ import annotations
 
-from .command import Command, CommandContext
+# CommandContext lives in core to avoid import cycles with the Command dataclass;
+# we re-export it here for the public commands API.
+from ..core.context import CommandContext
+from .command import Command
 from .decorators import command, group
-from .option import Option
-from .registry import CommandRegistry
-from .resolver import resolve_options
 
 # Advanced (mostly internal but useful for testing / power users)
-from .option import build_option_dict, build_options_from_signature
+from .option import Option, build_option_dict, build_options_from_signature
+from .registry import CommandRegistry
+from .resolver import resolve_options
 
 __all__ = [
     "Command",
     "CommandContext",
-    "command",
-    "group",
     "CommandRegistry",
     "Option",
-    "resolve_options",
-    "build_options_from_signature",
     "build_option_dict",
+    "build_options_from_signature",
+    "command",
+    "group",
+    "resolve_options",
 ]

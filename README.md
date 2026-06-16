@@ -28,6 +28,7 @@ It is designed to be the framework you actually *want* to use for both small per
 - [Hot Reload](#hot-reload-development)
 - [Testing](#testing-your-bot)
 - [Examples](#examples)
+- [Contributing](#contributing)
 - [Roadmap & Philosophy](#roadmap--philosophy)
 - [License](#license)
 
@@ -692,6 +693,82 @@ We are actively improving:
 - Redis cache backend (as an official extension)
 
 Contributions and feedback that align with the "clean, typed, delightful" philosophy are very welcome.
+
+---
+
+## Contributing
+
+### Local development setup (recommended)
+
+We use [uv](https://docs.astral.sh/uv/) for fast dependency management.
+
+```bash
+git clone https://github.com/discordkit/discordkit.git
+cd discordkit
+
+# Create virtual environment + install the project + dev dependencies
+uv sync --dev
+```
+
+Activate the environment when needed:
+
+```bash
+source .venv/bin/activate   # or `uv run <command>` (no activation needed)
+```
+
+### Pre-commit hooks (strongly recommended)
+
+Pre-commit runs fast checks (ruff, mypy, etc.) automatically before every commit.
+
+```bash
+# Install the git hooks (one-time setup)
+uv run pre-commit-install
+
+# Or directly:
+uv run pre-commit install
+```
+
+Run checks manually on the whole codebase:
+
+```bash
+uv run pre-commit run --all-files
+```
+
+The configuration lives in [`.pre-commit-config.yaml`](.pre-commit-config.yaml). It includes:
+
+- `ruff` (lint + auto-fix)
+- `ruff-format`
+- `mypy` (uses your project's strict configuration from `pyproject.toml`)
+- Standard hygiene hooks (`check-yaml`, `trailing-whitespace`, `debug-statements`, etc.)
+
+### Running checks manually
+
+```bash
+# Lint
+uv run ruff check .
+
+# Format check
+uv run ruff format --check .
+
+# Type checking (strict)
+uv run mypy src/discordkit
+
+# Tests (with coverage)
+uv run test-cov
+
+# All of the above in one command
+uv run checks
+```
+
+### Continuous Integration
+
+Every push and pull request to `main` runs the workflow defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
+
+- Matrix: Python 3.12 and 3.13
+- Steps: ruff check + format, mypy (strict), pytest + coverage
+- Uses `uv` + dependency caching for speed
+
+The CI **must pass** before a PR can be merged.
 
 ---
 

@@ -10,7 +10,8 @@ The Client owns one CommandRegistry.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 from .command import Command
 
@@ -35,33 +36,46 @@ class CommandRegistry:
         """
         if not isinstance(command, Command):
             if hasattr(command, "_discordkit_command"):
-                command = command._discordkit_command  # type: ignore[attr-defined]
+                extracted = command._discordkit_command
+                if isinstance(extracted, Command):
+                    command = extracted
+                else:
+                    raise TypeError(
+                        f"Object {command} is not a Command and was not created with @command"
+                    )
             else:
                 raise TypeError(
                     f"Object {command} is not a Command and was not created with @command"
                 )
 
+        # mypy narrowing: after the above, command is guaranteed to be Command
+        cmd: Command = command  # type narrowed by the isinstance + extraction above
+
         # Attach any children that were added via .command() before registration
         # (they are already linked via parent/children)
 
-        if command.parent is None:
+        if cmd.parent is None:
             # Top-level (either a flat command or a root group)
-            if command.guild_ids:
-                for gid in command.guild_ids:
-                    self._guild_commands.setdefault(gid, {})[command.name] = command
+            if cmd.guild_ids:
+                for gid in cmd.guild_ids:
+                    self._guild_commands.setdefault(gid, {})[cmd.name] = cmd
             else:
-                self._commands[command.name] = command
+                self._commands[cmd.name] = cmd
         else:
             # Child commands/groups are carried inside their parent's tree.
             # We still log for visibility.
-            logger.debug("Registered child command/group: %s (under %s)", command.name, command.parent.name if command.parent else "?")
+            logger.debug(
+                "Registered child command/group: %s (under %s)",
+                cmd.name,
+                cmd.parent.name if cmd.parent else "?",
+            )
 
         # Recursively ensure any children are "known" (mostly for logging/debug)
-        for child in command.children:
+        for child in cmd.children:
             self._ensure_child_registered(child)
 
-        logger.debug("Registered command: %s", command)
-        return command
+        logger.debug("Registered command: %s", cmd)
+        return cmd
 
     def _ensure_child_registered(self, command: Command) -> None:
         """Internal: walk children for logging / future use."""
@@ -139,9 +153,7 @@ class CommandRegistry:
         payload = [cmd.to_discord_payload() for cmd in self._commands.values()]
 
         try:
-            result = await self.client.http.bulk_overwrite_global_commands(
-                application_id, payload
-            )
+            result = await self.client.http.bulk_overwrite_global_commands(application_id, payload)
             logger.info("Successfully synced %d global command(s)", len(result))
         except Exception as exc:
             logger.exception("Failed to sync global commands: %s", exc)

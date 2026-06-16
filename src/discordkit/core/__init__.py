@@ -14,19 +14,19 @@ from .gateway import Gateway, GatewayEvent
 from .http import DiscordHTTPClient, DiscordHTTPError
 
 __all__ = [
-    "Client",
-    "Config",
-    "Context",
-    "InteractionContext",
-    "CommandContext",
     "AutocompleteContext",
-    "MemoryCache",
-    "PersistentCache",
     "CacheBackend",
     "CacheStats",
+    "Client",
+    "CommandContext",
+    "Config",
+    "Context",
+    "DiscordHTTPClient",
+    "DiscordHTTPError",
     "EvictionPolicy",
     "Gateway",
     "GatewayEvent",
-    "DiscordHTTPClient",
-    "DiscordHTTPError",
+    "InteractionContext",
+    "MemoryCache",
+    "PersistentCache",
 ]

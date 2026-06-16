@@ -111,8 +111,8 @@ class Config(BaseModel):
         return v
 
     model_config = {
-        "frozen": True,           # Config is immutable after creation (safer)
-        "extra": "forbid",        # Catch typos early
+        "frozen": True,  # Config is immutable after creation (safer)
+        "extra": "forbid",  # Catch typos early
         "validate_assignment": True,
         "str_strip_whitespace": True,
     }

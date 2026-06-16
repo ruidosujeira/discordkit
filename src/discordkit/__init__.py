@@ -33,13 +33,6 @@ __version__ = "0.2.0"
 __author__ = "DiscordKit Contributors"
 
 # Core exports - the main public API surface
-from .core.cache import CacheBackend, CacheStats, EvictionPolicy, MemoryCache
-from .core.cache_persistent import PersistentCache
-from .core.client import Client
-from .core.config import Config
-from .core.context import AutocompleteContext, Context, InteractionContext
-from .core.gateway import GatewayEvent
-
 # Command system
 from .commands import (
     Command,
@@ -50,13 +43,6 @@ from .commands import (
     resolve_options,
 )
 
-# Interaction components (buttons, modals, etc.)
-from .interactions import (
-    Button,
-    Modal,
-    SelectMenu,
-)
-
 # Component + Modal callback routing (new in 0.2)
 from .components import (
     ButtonContext,
@@ -64,66 +50,79 @@ from .components import (
     ModalContext,
     SelectContext,
 )
+from .core.cache import CacheBackend, CacheStats, EvictionPolicy, MemoryCache
+from .core.cache_persistent import PersistentCache
+from .core.client import Client
+from .core.config import Config
+from .core.context import AutocompleteContext, Context, InteractionContext
+from .core.gateway import GatewayEvent
+
+# Interaction components (buttons, modals, etc.)
+from .interactions import (
+    Button,
+    Modal,
+    SelectMenu,
+)
 
 # Public models (Pydantic)
 from .models import (
-    User,
-    Member,
-    Guild,
-    Channel,
-    Message,
     Attachment,
+    Channel,
+    Guild,
+    Member,
+    Message,
     Role,
+    User,
 )
 
 # Re-export important types
 from .types import (
+    ApplicationCommandType,
     Intents,
     Permissions,
-    ApplicationCommandType,
 )
 
 __all__ = [
-    # Core
-    "Client",
-    "Config",
-    "Context",
-    "InteractionContext",
+    "ApplicationCommandType",
+    "Attachment",
     "AutocompleteContext",
-    "MemoryCache",
-    "PersistentCache",
+    # Static interaction builders
+    "Button",
+    "ButtonContext",
     "CacheBackend",
     "CacheStats",
-    "EvictionPolicy",
-    "GatewayEvent",
+    "Channel",
+    # Core
+    "Client",
     # Commands
     "Command",
     "CommandContext",
+    # Component callback routing
+    "ComponentContext",
+    "Config",
+    "Context",
+    "EvictionPolicy",
+    "GatewayEvent",
+    "Guild",
+    # Types
+    "Intents",
+    "InteractionContext",
+    "Member",
+    "MemoryCache",
+    "Message",
+    "Modal",
+    "ModalContext",
     "Option",
+    "Permissions",
+    "PersistentCache",
+    "Role",
+    "SelectContext",
+    "SelectMenu",
+    # Models
+    "User",
+    # Metadata
+    "__version__",
     "command",
     "group",
     "resolve_options",
-    # Static interaction builders
-    "Button",
-    "Modal",
-    "SelectMenu",
-    # Component callback routing
-    "ComponentContext",
-    "ButtonContext",
-    "SelectContext",
-    "ModalContext",
-    # Models
-    "User",
-    "Member",
-    "Guild",
-    "Channel",
-    "Message",
-    "Attachment",
-    "Role",
-    # Types
-    "Intents",
-    "Permissions",
-    "ApplicationCommandType",
-    # Metadata
-    "__version__",
 ]

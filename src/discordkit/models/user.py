@@ -7,9 +7,9 @@ Strongly typed User and Member models.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import ClassVar
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from .base import DiscordModel
 
@@ -41,7 +41,7 @@ class User(DiscordModel):
     def __str__(self) -> str:
         return self.display_name
 
-    model_config = {
+    model_config: ClassVar[ConfigDict] = {
         **DiscordModel.model_config,
         "frozen": True,
     }
@@ -79,4 +79,4 @@ class Member(DiscordModel):
         return self.display_name
 
 
-__all__ = ["User", "Member"]
+__all__ = ["Member", "User"]

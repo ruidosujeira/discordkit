@@ -16,17 +16,15 @@ from __future__ import annotations
 import asyncio
 import inspect
 import logging
-import os
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
-from pydantic import SecretStr
-
-from .cache import CacheBackend, MemoryCache
 from ..commands.registry import CommandRegistry
 from ..commands.resolver import resolve_options
 from ..components.router import ComponentRouter
 from ..models import Channel, Guild, Member, User
-from ..types import Intents, InteractionType
+from ..types import InteractionType
+from .cache import CacheBackend, MemoryCache
 from .config import Config
 from .context import AutocompleteContext, CommandContext, Context
 from .gateway import Gateway, GatewayEvent
@@ -73,12 +71,11 @@ class Client:
             user_agent=config.user_agent,
         )
 
-        self.gateway = Gateway(
-            token=self._token,
-            intents=config.intents,
-            on_event=self._dispatch_gateway_event,
-            on_ready=self._handle_ready,
-        )
+        # Sharding: one Gateway per shard. The primary (shard 0) is built now;
+        # any additional shards are built lazily in start().
+        self._shard_count = config.shard_count or 1
+        self.gateway = self._build_gateway(0)
+        self._gateways: list[Gateway] = [self.gateway]
 
         self.commands = CommandRegistry(client=self)
         self.components = ComponentRouter(client=self)
@@ -90,6 +87,9 @@ class Client:
 
         # Auto-populate cache from resolved slash-command options
         self._auto_cache_enabled = True
+
+        # Global slash commands are synced once, on the first shard's READY.
+        self._commands_synced = False
 
         # Autocomplete handlers: (command_name, option_name) -> async callable
         self._autocomplete_handlers: dict[tuple[str, str], Any] = {}
@@ -115,6 +115,33 @@ class Client:
         )
         if self.config.debug:
             logging.getLogger("discordkit").setLevel(logging.DEBUG)
+
+    # ------------------------------------------------------------------
+    # Sharding
+    # ------------------------------------------------------------------
+
+    def _build_gateway(self, shard_id: int) -> Gateway:
+        """Construct a Gateway for a single shard, wired to this client."""
+        return Gateway(
+            token=self._token,
+            intents=self.config.intents,
+            on_event=self._dispatch_gateway_event,
+            on_ready=self._handle_ready,
+            shard_id=shard_id,
+            shard_count=self._shard_count,
+            reconnect_base_delay=self.config.reconnect_base_delay,
+            max_retries=self.config.max_retries,
+        )
+
+    def _build_shards(self) -> None:
+        """Ensure one Gateway exists per configured shard (shard 0 already built)."""
+        while len(self._gateways) < self._shard_count:
+            self._gateways.append(self._build_gateway(len(self._gateways)))
+
+    @property
+    def shard_count(self) -> int:
+        """Number of gateway shards this client runs."""
+        return self._shard_count
 
     # ------------------------------------------------------------------
     # Public API - Events
@@ -188,8 +215,9 @@ class Client:
 
         logger.info("Logged in as %s (id=%s)", self.user, self.user.id)
 
-        # Register slash commands if any were added
-        if self.commands._has_global_commands():
+        # Register slash commands once, regardless of how many shards report READY.
+        if not self._commands_synced and self.commands._has_global_commands():
+            self._commands_synced = True
             await self.commands.sync_global_commands(self.application_id)
 
         # Mark ready
@@ -223,7 +251,11 @@ class Client:
                     ctx_info = {
                         "type": "component",
                         "custom_id": (interaction.get("data") or {}).get("custom_id"),
-                        "user_id": (interaction.get("user") or (interaction.get("member") or {}).get("user") or {}).get("id"),
+                        "user_id": (
+                            interaction.get("user")
+                            or (interaction.get("member") or {}).get("user")
+                            or {}
+                        ).get("id"),
                     }
                     await self._report_generic_error(exc, ctx_info)
                     return False
@@ -282,28 +314,35 @@ class Client:
         self, interaction: dict[str, Any], command_name: str, options: dict[str, Any]
     ) -> CommandContext:
         """Construct a CommandContext from raw interaction + resolved options."""
-        data = interaction.get("data", {}) or {}
-
         # User / member resolution (same as components)
         user_data = interaction.get("user") or interaction.get("member", {}).get("user")
         user = User.model_validate(user_data) if user_data else None
 
         member_data = interaction.get("member")
-        member = Member.model_validate({**member_data, "user": user_data}) if member_data and user_data else None
+        member = (
+            Member.model_validate({**member_data, "user": user_data})
+            if member_data and user_data
+            else None
+        )
 
-        guild_id = interaction.get("guild_id")
         channel_id = interaction.get("channel_id")
         message = None  # slash commands don't usually have a triggering message
+
+        raw_interaction_id = interaction.get("id")
+        interaction_id = int(raw_interaction_id) if raw_interaction_id is not None else None
+
+        raw_channel_id = channel_id
+        ch_id = int(raw_channel_id) if raw_channel_id is not None else None
 
         return CommandContext(
             client=self,
             command_name=command_name,
-            interaction_id=int(interaction.get("id")) if interaction.get("id") else None,
+            interaction_id=interaction_id,
             interaction_token=interaction.get("token"),
             user=user,
             member=member,
             guild=None,  # can be enriched on demand
-            channel_id=int(channel_id) if channel_id else None,
+            channel_id=ch_id,
             message=message,
             options=options,
         )
@@ -338,7 +377,9 @@ class Client:
             return
 
         # Build autocomplete context
-        ctx = self._build_autocomplete_context(interaction, command_name, option_name, current_value)
+        ctx = self._build_autocomplete_context(
+            interaction, command_name, option_name, current_value
+        )
 
         try:
             result = handler(ctx)
@@ -374,21 +415,25 @@ class Client:
         member_data = interaction.get("member")
         member = Member.model_validate(member_data) if member_data else None
 
-        channel_id = interaction.get("channel_id")
-
+        raw_iid = interaction.get("id")
+        iid = int(raw_iid) if raw_iid is not None else None
+        raw_ch = interaction.get("channel_id")
+        ch_id = int(raw_ch) if raw_ch is not None else None
         return AutocompleteContext(
             client=self,
-            interaction_id=int(interaction.get("id")) if interaction.get("id") else None,
+            interaction_id=iid,
             interaction_token=interaction.get("token"),
             user=user,
             member=member,
-            channel_id=int(channel_id) if channel_id else None,
+            channel_id=ch_id,
             command_name=command_name,
             option_name=option_name,
             value=value,
         )
 
-    async def _send_autocomplete_response(self, interaction: dict[str, Any], choices: list[dict[str, Any]]) -> None:
+    async def _send_autocomplete_response(
+        self, interaction: dict[str, Any], choices: list[dict[str, Any]]
+    ) -> None:
         """Low-level helper to send autocomplete choices when handler doesn't use the context."""
         iid = interaction.get("id")
         token = interaction.get("token")
@@ -487,6 +532,7 @@ class Client:
                 await ctx.respond(suggestions)
                 # or return the list and framework will call respond
         """
+
         def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             key = (command.lower(), option.lower())
             self._autocomplete_handlers[key] = func
@@ -496,7 +542,9 @@ class Client:
 
     def error_handler(
         self, func: Callable[[Exception, dict[str, Any]], Any] | None = None
-    ) -> Callable[[Callable[[Exception, dict[str, Any]], Any]], Callable[[Exception, dict[str, Any]], Any]]:
+    ) -> Callable[
+        [Callable[[Exception, dict[str, Any]], Any]], Callable[[Exception, dict[str, Any]], Any]
+    ]:
         """Register a global error handler.
 
         Can be used as decorator or method:
@@ -509,7 +557,10 @@ class Client:
             # or
             bot.error_handler(my_error_handler)
         """
-        def register(f: Callable[[Exception, dict[str, Any]], Any]):
+
+        def register(
+            f: Callable[[Exception, dict[str, Any]], Any],
+        ) -> Callable[[Exception, dict[str, Any]], Any]:
             self._error_handlers.append(f)
             return f
 
@@ -528,7 +579,9 @@ class Client:
             "guild_id": getattr(ctx, "guild", None) and getattr(ctx.guild, "id", None),
             "channel_id": ctx.channel_id,
         }
-        logger.exception("Error in command '%s': %s", context.get("command"), error, extra={"context": context})
+        logger.exception(
+            "Error in command '%s': %s", context.get("command"), error, extra={"context": context}
+        )
 
         # Best effort user-facing response
         try:
@@ -562,10 +615,26 @@ class Client:
     # ------------------------------------------------------------------
 
     async def start(self) -> None:
-        """Connect to the gateway and run until closed. Does not block forever by itself."""
+        """Connect every shard's gateway and run until closed.
+
+        Shards are connected sequentially, waiting for each to become READY
+        before starting the next. This naturally respects Discord's identify
+        rate limit (one IDENTIFY per ~5s per bucket).
+        """
         self._running = True
-        logger.info("Starting DiscordKit client (intents=%s)...", self.config.intents)
-        await self.gateway.connect()
+        self._build_shards()
+        logger.info(
+            "Starting DiscordKit client (shards=%s, intents=%s)...",
+            self._shard_count,
+            self.config.intents,
+        )
+
+        for gw in self._gateways:
+            await gw.connect()
+            try:
+                await asyncio.wait_for(gw.wait_until_ready(), timeout=60.0)
+            except TimeoutError:
+                logger.warning("Shard %s did not become ready in time; continuing.", gw.shard_id)
 
         # Keep the client alive
         try:
@@ -587,10 +656,11 @@ class Client:
             logger.info("Received KeyboardInterrupt, shutting down...")
 
     async def close(self) -> None:
-        """Cleanly shut down HTTP + Gateway connections."""
+        """Cleanly shut down HTTP + every shard's Gateway connection."""
         self._running = False
         logger.info("Shutting down DiscordKit client...")
-        await self.gateway.close()
+        for gw in self._gateways:
+            await gw.close()
         await self.http.close()
 
     # ------------------------------------------------------------------
@@ -715,8 +785,9 @@ class Client:
         """Invalidate all cached members for a guild."""
         return self.cache.invalidate_by_guild(guild_id)
 
-    def cache_stats(self):
+    def cache_stats(self) -> Any:
         """Return a snapshot of cache hit/miss/eviction statistics."""
+        # Return is CacheStats but we use Any here to avoid import cycles / strict any issues in this module
         return self.cache.stats()
 
     @property

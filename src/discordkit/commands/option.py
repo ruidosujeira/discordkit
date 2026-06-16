@@ -25,8 +25,9 @@ Usage:
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, Sequence
+from typing import Any
 
 from ..types import ApplicationCommandOptionType
 
@@ -50,7 +51,7 @@ class Option:
     description: str
 
     # Behavior
-    required: bool | None = None          # None = auto-detect from default value
+    required: bool | None = None  # None = auto-detect from default value
     autocomplete: bool = False
 
     # Constraints (type dependent)
@@ -138,18 +139,28 @@ class Option:
 # Advanced option building (used by Command)
 # =============================================================================
 
-import inspect
-from typing import TYPE_CHECKING, Any, Callable, get_args, get_origin, get_type_hints
+import inspect  # noqa: E402
+from collections.abc import Callable  # noqa: E402
+from typing import TYPE_CHECKING, get_args, get_origin, get_type_hints  # noqa: E402
 
 if TYPE_CHECKING:
-    from ..models import Attachment, Channel, Member, Message, Role, User
+    from ..models import (  # noqa: F401 - used for type mapping
+        Attachment,
+        Channel,
+        Member,
+        Message,
+        Role,
+        User,
+    )
+
+# Re-export for the public API surface used by build_* (kept for backward compat in some paths)
+# Note: actual values are assigned later; this silences some import ordering while keeping top-level imports.
 
 try:
     from types import UnionType  # Python 3.10+
 except ImportError:
     UnionType = None  # type: ignore[misc,assignment]
 
-from ..types import ApplicationCommandOptionType
 
 # Mapping of Python / DiscordKit types -> Discord API option type
 _TYPE_TO_OPTION: dict[Any, ApplicationCommandOptionType] = {
@@ -286,7 +297,9 @@ def build_option_dict(
             break
 
     # Resolve the Discord type
-    opt_type = resolve_application_option_type(base_annotation if base_annotation is not inspect.Parameter.empty else str)
+    opt_type = resolve_application_option_type(
+        base_annotation if base_annotation is not inspect.Parameter.empty else str
+    )
 
     # Determine if required
     is_required: bool
@@ -330,22 +343,28 @@ def build_option_dict(
     return option
 
 
-def _validate_option_dict(option: dict[str, Any], opt_type: ApplicationCommandOptionType, param_name: str) -> None:
+def _validate_option_dict(
+    option: dict[str, Any], opt_type: ApplicationCommandOptionType, param_name: str
+) -> None:
     """Raise clear errors for obviously invalid Option configurations."""
-    name = option["name"]
-
     if "choices" in option and option.get("autocomplete"):
         raise ValueError(f"Parameter '{param_name}': cannot use both choices and autocomplete")
 
     if opt_type in (ApplicationCommandOptionType.STRING,):
         if "min_value" in option or "max_value" in option:
-            raise ValueError(f"Parameter '{param_name}': min_value/max_value only valid for INTEGER or NUMBER")
+            raise ValueError(
+                f"Parameter '{param_name}': min_value/max_value only valid for INTEGER or NUMBER"
+            )
     elif opt_type in (ApplicationCommandOptionType.INTEGER, ApplicationCommandOptionType.NUMBER):
         if "min_length" in option or "max_length" in option:
-            raise ValueError(f"Parameter '{param_name}': min_length/max_length only valid for STRING")
+            raise ValueError(
+                f"Parameter '{param_name}': min_length/max_length only valid for STRING"
+            )
 
     if "channel_types" in option and opt_type != ApplicationCommandOptionType.CHANNEL:
-        raise ValueError(f"Parameter '{param_name}': channel_types can only be used with Channel options")
+        raise ValueError(
+            f"Parameter '{param_name}': channel_types can only be used with Channel options"
+        )
 
 
 def build_options_from_signature(callback: Callable[..., Any]) -> list[dict[str, Any]]:
@@ -382,5 +401,9 @@ def build_options_from_signature(callback: Callable[..., Any]) -> list[dict[str,
     return options
 
 
-__all__ = ["Option", "build_options_from_signature", "build_option_dict", "resolve_application_option_type"]
-
+__all__ = [
+    "Option",
+    "build_option_dict",
+    "build_options_from_signature",
+    "resolve_application_option_type",
+]

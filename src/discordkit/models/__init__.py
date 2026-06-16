@@ -19,13 +19,13 @@ from .role import Role
 from .user import Member, User
 
 __all__ = [
+    "Attachment",
+    "Channel",
     "DiscordModel",
+    "Guild",
+    "Member",
+    "Message",
+    "Role",
     "TimestampedModel",
     "User",
-    "Member",
-    "Guild",
-    "Channel",
-    "Message",
-    "Attachment",
-    "Role",
 ]

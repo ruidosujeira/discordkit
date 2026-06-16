@@ -7,15 +7,17 @@ The Command object model.
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from inspect import signature
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
-from ..core.context import CommandContext
-from ..types import ApplicationCommandOptionType, ApplicationCommandType
-from .option import Option, build_options_from_signature  # new powerful system
+from ..types import ApplicationCommandType
+from .option import build_options_from_signature  # new powerful system
 
 if TYPE_CHECKING:
+    from ..core.context import CommandContext
+
     F = TypeVar("F", bound=Callable[..., Any])
 
 
@@ -56,7 +58,7 @@ class Command:
             except Exception:
                 pass
 
-    def add_child(self, child: "Command") -> None:
+    def add_child(self, child: Command) -> None:
         """Attach a subcommand or sub-group to this command/group."""
         child.parent = self
         if child not in self.children:
@@ -167,7 +169,6 @@ class Command:
         call_kwargs = {**ctx.options, **kwargs}
 
         # Always inject ctx as first positional or kwarg if the function accepts it
-        import inspect
 
         sig = signature(self.callback)
         params = list(sig.parameters.keys())
@@ -186,4 +187,4 @@ class Command:
         return f"<Command name={self.name!r} scope={scope}>"
 
 
-__all__ = ["Command"]
+__all__ = ["Command", "CommandContext"]

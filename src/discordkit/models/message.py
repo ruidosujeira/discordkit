@@ -68,4 +68,4 @@ class Message(DiscordModel):
         return self.content or "[no content]"
 
 
-__all__ = ["Message", "Attachment"]
+__all__ = ["Attachment", "Message"]

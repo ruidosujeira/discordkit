@@ -146,15 +146,21 @@ class DiscordHTTPClient:
 
             logger.warning(
                 "Rate limited on %s %s (global=%s). Backing off for %.2fs",
-                method, path, body.get("global") if body else False, retry_after
+                method,
+                path,
+                body.get("global") if body else False,
+                retry_after,
             )
 
             if _retry_count < 2:  # Allow up to 2 retries on rate limits
                 await asyncio.sleep(retry_after + 0.05)
                 return await self.request(
-                    method, path,
-                    json=json, params=params, expect_model=expect_model,
-                    _retry_count=_retry_count + 1
+                    method,
+                    path,
+                    json=json,
+                    params=params,
+                    expect_model=expect_model,
+                    _retry_count=_retry_count + 1,
                 )
             else:
                 # Give up after retries
@@ -184,19 +190,23 @@ class DiscordHTTPClient:
     # ------------------------------------------------------------------
 
     async def get_current_user(self) -> dict[str, Any]:
-        return await self.request("GET", "/users/@me")
+        result: Any = await self.request("GET", "/users/@me")
+        return result  # type: ignore[no-any-return]
 
     async def get_application_commands(self, application_id: int) -> list[dict[str, Any]]:
-        return await self.request("GET", f"/applications/{application_id}/commands")
+        result: Any = await self.request("GET", f"/applications/{application_id}/commands")
+        return result  # type: ignore[no-any-return]
 
     async def bulk_overwrite_global_commands(
         self, application_id: int, commands: list[dict[str, Any]]
     ) -> list[dict[str, Any]]:
-        return await self.request(
+        # request() json accepts dict | BaseModel | None; list is accepted at runtime by httpx/json
+        result: Any = await self.request(
             "PUT",
             f"/applications/{application_id}/commands",
-            json=commands,
+            json=commands,  # type: ignore[arg-type]
         )
+        return result  # type: ignore[no-any-return]
 
     async def create_interaction_response(
         self,

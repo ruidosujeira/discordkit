@@ -7,8 +7,9 @@ Declarative button component with strong typing.
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable
+from typing import Any
 
 from ..types import ButtonStyle, ComponentType
 

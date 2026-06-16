@@ -25,7 +25,6 @@ import typer
 from rich import print
 from rich.console import Console
 from rich.panel import Panel
-from rich.syntax import Syntax
 
 # watchfiles is a required dependency of discordkit
 from watchfiles import PythonFilter, run_process
@@ -89,7 +88,12 @@ def new(
 
     target_dir.mkdir(parents=True, exist_ok=True)
 
-    console.print(Panel.fit(f"[bold cyan]Creating DiscordKit project:[/] [bold]{project_name}[/]", border_style="cyan"))
+    console.print(
+        Panel.fit(
+            f"[bold cyan]Creating DiscordKit project:[/] [bold]{project_name}[/]",
+            border_style="cyan",
+        )
+    )
 
     # ------------------------------------------------------------------
     # Root files
@@ -399,12 +403,12 @@ if __name__ == "__main__":
     console.print()
     console.print("[bold green]✓[/] Project created successfully!")
     console.print()
-    console.print(f"Next steps:")
+    console.print("Next steps:")
     console.print(f"  1. [cyan]cd {project_name}[/cyan]")
-    console.print(f"  2. Copy [cyan].env.example[/cyan] to [cyan].env[/cyan] and add your bot token")
-    console.print(f"  3. Install dependencies (recommended):")
-    console.print(f"     [cyan]uv sync[/cyan]")
-    console.print(f"  4. Run your bot:")
+    console.print("  2. Copy [cyan].env.example[/cyan] to [cyan].env[/cyan] and add your bot token")
+    console.print("  3. Install dependencies (recommended):")
+    console.print("     [cyan]uv sync[/cyan]")
+    console.print("  4. Run your bot:")
     if minimal:
         console.print(f"     [cyan]uv run {package_name}.py[/cyan]   (or python {package_name}.py)")
     else:
@@ -456,8 +460,7 @@ def run(
     ] = "bot.py",
     *,
     reload: Annotated[
-        bool,
-        typer.Option("--reload/--no-reload", help="Enable hot reload (default: on)")
+        bool, typer.Option("--reload/--no-reload", help="Enable hot reload (default: on)")
     ] = True,
     watch: Annotated[
         list[str] | None,
@@ -484,7 +487,9 @@ def run(
     """
     cwd = Path.cwd()
 
-    console.print(Panel.fit(f"[bold cyan]DiscordKit Run[/] — entry: [bold]{entry}[/]", border_style="cyan"))
+    console.print(
+        Panel.fit(f"[bold cyan]DiscordKit Run[/] — entry: [bold]{entry}[/]", border_style="cyan")
+    )
 
     if not reload:
         # Simple execution without watching (useful for production or debugging reload)

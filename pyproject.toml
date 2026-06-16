@@ -114,40 +114,4 @@ typecheck = "mypy src/discordkit"
 test = "pytest"
 test-cov = "pytest --cov=src/discordkit --cov-report=term-missing"
 checks = { chain = ["lint", "format-check", "typecheck", "test"] }
-```
 
-Great, now contributors can do `uv run pre-commit-install` and `uv run checks`.
-
-Now, update the README.
-
-I need to:
-
-1. Update the Table of Contents to include the new section.
-
-2. Insert a solid **Contributing** section before the License.
-
-I'll add the TOC entry after "Testing Your Bot" or after "Examples". Let's put it after "Examples" and before "Roadmap & Philosophy".
-
-Current TOC ends with:
-
-- [Testing](#testing-your-bot)
-
-- [Examples](#examples)
-
-- [Roadmap & Philosophy](#roadmap--philosophy)
-
-- [License](#license)
-
-I'll insert:
-
-- [Contributing](#contributing)
-
-After Examples.
-
-For the actual section content, make it clear, direct, and useful.
-
-I'll place the new section right before `## License`.
-
-To do the edits, I'll use search_replace for TOC and then a larger insert for the section.
-
-First, update TOC.

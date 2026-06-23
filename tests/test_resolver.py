@@ -6,15 +6,14 @@ from __future__ import annotations
 
 from typing import Annotated
 
-import pytest
-
-from discordkit.core.cache import MemoryCache
 from discordkit.commands import Option, command, resolve_options
+from discordkit.core.cache import MemoryCache
 from discordkit.models import User
-from discordkit.types import ApplicationCommandOptionType
 
 
-def make_fake_interaction(command_name: str, options: list[dict], resolved: dict | None = None) -> dict:
+def make_fake_interaction(
+    command_name: str, options: list[dict], resolved: dict | None = None
+) -> dict:
     return {
         "id": "123",
         "type": 2,
@@ -67,9 +66,7 @@ class TestOptionResolver:
         interaction = make_fake_interaction(
             "test",
             [{"name": "user", "type": 6, "value": "424242"}],
-            resolved={
-                "users": {"424242": {"id": "424242", "username": "cacheduser"}}
-            },
+            resolved={"users": {"424242": {"id": "424242", "username": "cacheduser"}}},
         )
 
         resolve_options(test_cmd, interaction, cache=cache)

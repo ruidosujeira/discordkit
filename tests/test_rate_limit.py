@@ -8,7 +8,6 @@ import asyncio
 
 import pytest
 
-from discordkit.core.http import DiscordHTTPClient
 from discordkit.core.rate_limit import RateLimiter
 
 

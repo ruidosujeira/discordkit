@@ -1,6 +1,7 @@
 """
 Demonstrates how to define buttons and modals (callback routing coming soon).
 """
+
 from discordkit.interactions import Button, Modal, SelectMenu
 from discordkit.types import ButtonStyle
 

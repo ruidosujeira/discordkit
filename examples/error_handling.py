@@ -11,6 +11,7 @@ This example shows:
 In real projects you would send `context` + error to Sentry, a Discord logging channel,
 or your observability stack.
 """
+
 import logging
 import os
 from typing import Annotated
@@ -23,7 +24,9 @@ from discordkit.core.context import CommandContext
 from discordkit.types import Intents
 
 load_dotenv()
-logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s | %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+)
 logger = logging.getLogger("mybot")
 
 config = Config(token=os.environ["DISCORD_TOKEN"], intents=Intents.DEFAULT, debug=False)
@@ -34,6 +37,7 @@ bot = Client(config)
 # Global error handler (highly recommended for production)
 # ------------------------------------------------------------------
 
+
 @bot.error_handler
 async def global_error_handler(error: Exception, context: dict):
     cmd = context.get("command", "unknown")
@@ -42,7 +46,10 @@ async def global_error_handler(error: Exception, context: dict):
 
     logger.error(
         "Command failed | cmd=%s | user=%s | guild=%s | error=%s",
-        cmd, user, guild, error,
+        cmd,
+        user,
+        guild,
+        error,
         exc_info=True,  # full traceback in logs
     )
 
@@ -56,6 +63,7 @@ async def global_error_handler(error: Exception, context: dict):
 # Commands that demonstrate different error scenarios
 # ------------------------------------------------------------------
 
+
 @command(name="divide", description="Divide two numbers (can fail)")
 async def divide(
     ctx: CommandContext,
@@ -68,11 +76,15 @@ async def divide(
 
 
 @command(name="risky", description="Command that can raise arbitrary errors")
-async def risky(ctx: CommandContext, action: Annotated[str, Option("What to do", choices=["crash", "slow", "ok"])]):
+async def risky(
+    ctx: CommandContext,
+    action: Annotated[str, Option("What to do", choices=["crash", "slow", "ok"])],
+):
     if action == "crash":
         raise RuntimeError("Something went very wrong on purpose")
     if action == "slow":
         import asyncio
+
         await asyncio.sleep(10)  # simulate long work without defer (bad practice)
         await ctx.respond("Finished slow work")
     else:

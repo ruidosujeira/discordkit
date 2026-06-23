@@ -4,8 +4,6 @@ Pytest configuration and shared fixtures for DiscordKit tests.
 
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
 
 from discordkit import Client, Config
@@ -58,7 +56,9 @@ def nested_group_command() -> Command:
         pass
 
     @admin_group.command(name="ban", description="Ban a user")
-    async def ban(ctx, user_id: Annotated[str, Option("User ID")], reason: Annotated[str, Option("Reason")]):
+    async def ban(
+        ctx, user_id: Annotated[str, Option("User ID")], reason: Annotated[str, Option("Reason")]
+    ):
         pass
 
     return admin_group  # type: ignore[return-value]

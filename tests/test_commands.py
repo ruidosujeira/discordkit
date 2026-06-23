@@ -4,7 +4,6 @@ Tests for the command and Option system.
 
 from __future__ import annotations
 
-import json
 from typing import Annotated
 
 import pytest
@@ -46,7 +45,11 @@ class TestOptionClass:
 
 class TestPayloadGeneration:
     def test_basic_annotated_options(self):
-        async def my_cmd(ctx, name: Annotated[str, Option("Name", min_length=2)], age: Annotated[int, Option("Age")] = 18):
+        async def my_cmd(
+            ctx,
+            name: Annotated[str, Option("Name", min_length=2)],
+            age: Annotated[int, Option("Age")] = 18,
+        ):
             pass
 
         options = build_options_from_signature(my_cmd)

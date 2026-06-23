@@ -4,13 +4,15 @@ Example demonstrating the new component + modal routing system.
 Run with a valid token:
     DISCORD_TOKEN=... python examples/component_bot.py
 """
+
 import os
+
 from dotenv import load_dotenv
 
 from discordkit import Client, Config
 from discordkit.commands import command
 from discordkit.components import ButtonContext, ModalContext, SelectContext
-from discordkit.interactions import Button, Modal, SelectMenu
+from discordkit.interactions import Button, SelectMenu
 from discordkit.types import ButtonStyle, Intents
 
 load_dotenv()
@@ -27,6 +29,7 @@ bot = Client(config)
 # ------------------------------------------------------------------
 # Slash command that sends interactive components
 # ------------------------------------------------------------------
+
 
 @command(name="demo", description="Show interactive components demo")
 async def demo(ctx):
@@ -68,6 +71,7 @@ async def demo(ctx):
 # ------------------------------------------------------------------
 # Component handlers using the new @bot.component decorator
 # ------------------------------------------------------------------
+
 
 @bot.component("confirm_action")
 async def on_confirm(ctx: ButtonContext):
@@ -125,6 +129,7 @@ async def on_open_modal(ctx: ButtonContext):
 # Modal handler
 # ------------------------------------------------------------------
 
+
 @bot.modal("feedback_modal")
 async def on_feedback(ctx: ModalContext):
     text = ctx.get_value("feedback_text") or ""
@@ -134,6 +139,7 @@ async def on_feedback(ctx: ModalContext):
 # ------------------------------------------------------------------
 # Ready
 # ------------------------------------------------------------------
+
 
 @bot.event("ready")
 async def on_ready(ctx):

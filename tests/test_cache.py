@@ -137,7 +137,9 @@ class TestLRUEviction:
 
 
 class TestGuildScopedInvalidation:
-    def test_invalidate_by_guild_cleans_members(self, cache: MemoryCache, sample_member: Member, sample_guild: Guild):
+    def test_invalidate_by_guild_cleans_members(
+        self, cache: MemoryCache, sample_member: Member, sample_guild: Guild
+    ):
         cache.set_member(sample_member, guild_id=456)
         cache.set_guild(sample_guild)
         count = cache.invalidate_by_guild(456)
@@ -184,7 +186,9 @@ class TestAdvancedMethods:
         assert len(calls) == 1
 
     @pytest.mark.asyncio
-    async def test_get_or_fetch_member_async_fetcher(self, cache: MemoryCache, sample_member: Member):
+    async def test_get_or_fetch_member_async_fetcher(
+        self, cache: MemoryCache, sample_member: Member
+    ):
         calls: list[int] = []
 
         async def fetch():

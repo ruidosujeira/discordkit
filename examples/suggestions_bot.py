@@ -21,7 +21,7 @@ from typing import Annotated
 from dotenv import load_dotenv
 
 from discordkit import Client, Config
-from discordkit.commands import Option, command, group
+from discordkit.commands import Option, group
 from discordkit.components import ButtonContext
 from discordkit.core.context import CommandContext
 from discordkit.interactions import Button
@@ -75,8 +75,14 @@ async def suggestions_submit(
             {
                 "type": 1,
                 "components": [
-                    Button(label="👍 Upvote", style=ButtonStyle.SUCCESS, custom_id=f"sug_up_{sug.id}").to_dict(),
-                    Button(label="👎 Downvote", style=ButtonStyle.DANGER, custom_id=f"sug_down_{sug.id}").to_dict(),
+                    Button(
+                        label="👍 Upvote", style=ButtonStyle.SUCCESS, custom_id=f"sug_up_{sug.id}"
+                    ).to_dict(),
+                    Button(
+                        label="👎 Downvote",
+                        style=ButtonStyle.DANGER,
+                        custom_id=f"sug_down_{sug.id}",
+                    ).to_dict(),
                 ],
             }
         ],
@@ -166,7 +172,7 @@ async def suggestions_deny(
         await ctx.respond("Suggestion not found.", ephemeral=True)
         return
 
-    sug = SUGGESTIONS.pop(suggestion_id)
+    SUGGESTIONS.pop(suggestion_id)
     msg = f"❌ Denied suggestion #{suggestion_id}."
     if reason:
         msg += f" Reason: {reason}"

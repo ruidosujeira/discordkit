@@ -4,7 +4,9 @@ Simple standalone DiscordKit example.
 Run with:
     DISCORD_TOKEN=... python examples/simple_bot.py
 """
+
 import os
+
 from dotenv import load_dotenv
 
 from discordkit import Client, Config

@@ -35,6 +35,7 @@ class TestErrorHandlers:
         # We test the notification path indirectly
         # For unit test, we can call the private method (acceptable for framework tests)
         import asyncio
+
         asyncio.run(error_client._notify_error_handlers(ValueError("boom"), {"command": "test"}))
 
         # The handler should have been called

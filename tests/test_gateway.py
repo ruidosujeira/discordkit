@@ -16,7 +16,6 @@ import asyncio
 import json
 from dataclasses import dataclass
 
-import pytest
 from websockets.protocol import State
 
 from discordkit.core.gateway import Gateway, GatewayEvent, GatewayOpcode
@@ -44,7 +43,9 @@ def _sent_payloads(ws: _FakeWS) -> list[dict]:
 
 
 def _hello_event(interval_ms: int = 45000) -> GatewayEvent:
-    return GatewayEvent(op=GatewayOpcode.HELLO, t=None, d={"heartbeat_interval": interval_ms}, s=None)
+    return GatewayEvent(
+        op=GatewayOpcode.HELLO, t=None, d={"heartbeat_interval": interval_ms}, s=None
+    )
 
 
 async def _drive_hello(gw: Gateway) -> None:
@@ -205,9 +206,7 @@ class TestSessionResume:
 
         gw = _make_gateway(on_event=on_event)
         gw._reconnect_attempts = 3
-        await gw._handle_event(
-            GatewayEvent(op=GatewayOpcode.DISPATCH, t="RESUMED", d={}, s=11)
-        )
+        await gw._handle_event(GatewayEvent(op=GatewayOpcode.DISPATCH, t="RESUMED", d={}, s=11))
         assert gw._ready.is_set()
         assert gw._reconnect_attempts == 0
         assert "RESUMED" in seen
@@ -318,18 +317,14 @@ class TestHeartbeat:
     async def test_ack_event_marks_acked(self) -> None:
         gw = _make_gateway()
         gw._last_heartbeat_acked = False
-        await gw._handle_event(
-            GatewayEvent(op=GatewayOpcode.HEARTBEAT_ACK, t=None, d=None, s=None)
-        )
+        await gw._handle_event(GatewayEvent(op=GatewayOpcode.HEARTBEAT_ACK, t=None, d=None, s=None))
         assert gw._last_heartbeat_acked is True
 
     async def test_server_heartbeat_request_sends_immediately(self) -> None:
         gw = _make_gateway()
         ws = _FakeWS(state=State.OPEN, sent=[])
         gw._ws = ws  # type: ignore[assignment]
-        await gw._handle_event(
-            GatewayEvent(op=GatewayOpcode.HEARTBEAT, t=None, d=None, s=None)
-        )
+        await gw._handle_event(GatewayEvent(op=GatewayOpcode.HEARTBEAT, t=None, d=None, s=None))
         assert _sent_payloads(ws)[0]["op"] == GatewayOpcode.HEARTBEAT
         assert gw._last_heartbeat_acked is False
 

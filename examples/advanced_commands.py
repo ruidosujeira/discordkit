@@ -14,6 +14,7 @@ Features shown:
 Run (after registering the command via the bot):
     DISCORD_TOKEN=... python examples/advanced_commands.py
 """
+
 from __future__ import annotations
 
 import os
@@ -23,7 +24,7 @@ from dotenv import load_dotenv
 
 from discordkit import Client, Config
 from discordkit.commands import Option, command
-from discordkit.models import Attachment, Channel, Member, Role, User
+from discordkit.models import Attachment, Channel, Role, User
 from discordkit.types import Intents
 
 load_dotenv()
@@ -137,6 +138,7 @@ async def configure(
 
 # Simpler individual examples -------------------------------------------------
 
+
 @command(name="ban", description="Ban a user with reason and duration")
 async def ban(
     ctx,
@@ -168,14 +170,16 @@ async def poll(
     option_b: Annotated[str, Option("Second option")],
     duration_minutes: Annotated[
         int,
-        Option("How long the poll runs", min_value=1, max_value=1440, choices=[("5 min", 5), ("1 hour", 60), ("1 day", 1440)]),
+        Option(
+            "How long the poll runs",
+            min_value=1,
+            max_value=1440,
+            choices=[("5 min", 5), ("1 hour", 60), ("1 day", 1440)],
+        ),
     ] = 60,
 ):
     await ctx.respond(
-        f"**Poll:** {question}\n"
-        f"• {option_a}\n"
-        f"• {option_b}\n"
-        f"Duration: {duration_minutes} minutes"
+        f"**Poll:** {question}\n• {option_a}\n• {option_b}\nDuration: {duration_minutes} minutes"
     )
 
 
@@ -187,6 +191,7 @@ if bot is not None:
 
 
 if bot is not None:
+
     @bot.event("ready")
     async def on_ready(ctx):
         print(f"✅ Advanced options demo ready as {bot.user}")

@@ -10,13 +10,14 @@ Demonstrates:
 Usage:
     DISCORD_TOKEN=... python examples/slash_commands.py
 """
+
 import os
 from typing import Annotated
 
 from dotenv import load_dotenv
 
 from discordkit import Client, Config
-from discordkit.commands import Option, command, resolve_options
+from discordkit.commands import Option, command
 from discordkit.core.context import AutocompleteContext, CommandContext
 from discordkit.models import Attachment, Channel, Role, User
 from discordkit.types import Intents
@@ -35,6 +36,7 @@ bot = Client(config)
 # ------------------------------------------------------------------
 # Main example command with rich resolved options
 # ------------------------------------------------------------------
+
 
 @command(name="userinfo", description="Show information about a user (with resolution demo)")
 async def userinfo(
@@ -62,12 +64,16 @@ async def userinfo(
     await ctx.respond("\n".join(lines))
 
 
-@command(name="configure", description="Demo command with many resolved option types + autocomplete")
+@command(
+    name="configure", description="Demo command with many resolved option types + autocomplete"
+)
 async def configure(
     ctx: CommandContext,
     name: Annotated[str, Option("Configuration name", min_length=2, max_length=30)],
     level: Annotated[int, Option("Level", min_value=1, max_value=100)] = 10,
-    target_channel: Annotated[Channel | None, Option("Target channel", channel_types=[0, 5])] = None,
+    target_channel: Annotated[
+        Channel | None, Option("Target channel", channel_types=[0, 5])
+    ] = None,
     attachment: Annotated[Attachment | None, Option("Reference file")] = None,
     role: Annotated[Role | None, Option("Role to apply")] = None,
     template: Annotated[str, Option("Template to use", autocomplete=True)] = "default",
@@ -92,6 +98,7 @@ async def configure(
 # Autocomplete handler (basic but functional)
 # ------------------------------------------------------------------
 
+
 @bot.autocomplete("configure", "template")
 async def configure_template_autocomplete(ctx: AutocompleteContext):
     """Simple static + dynamic autocomplete based on what user typed."""
@@ -105,10 +112,12 @@ async def configure_template_autocomplete(ctx: AutocompleteContext):
     ]
 
     if value:
-        suggestions = [s for s in suggestions if value in s["name"].lower() or value in str(s["value"]).lower()]
+        suggestions = [
+            s for s in suggestions if value in s["name"].lower() or value in str(s["value"]).lower()
+        ]
 
     # Handler can either return the list or call respond
-    await ctx.respond(suggestions)   # framework will also handle if you just return the list
+    await ctx.respond(suggestions)  # framework will also handle if you just return the list
 
 
 # ------------------------------------------------------------------
@@ -122,7 +131,9 @@ bot.add_command(configure)
 @bot.event("ready")
 async def on_ready(ctx):
     print(f"✅ Slash command demo ready as {bot.user}")
-    print("   Try /userinfo, /configure in Discord (commands must be synced by the framework on READY).")
+    print(
+        "   Try /userinfo, /configure in Discord (commands must be synced by the framework on READY)."
+    )
     print("   Autocomplete is registered for the 'template' option of /configure.")
 
 

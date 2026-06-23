@@ -37,7 +37,9 @@ async def mod_ban(
     ctx: CommandContext,
     user: Annotated[User, Option("User to ban")],
     reason: Annotated[str, Option("Reason for ban", min_length=5, max_length=500)],
-    delete_days: Annotated[int, Option("Delete recent messages (0-7 days)", min_value=0, max_value=7)] = 0,
+    delete_days: Annotated[
+        int, Option("Delete recent messages (0-7 days)", min_value=0, max_value=7)
+    ] = 0,
 ):
     # In a real bot you would call the Discord ban endpoint here
     await ctx.respond(

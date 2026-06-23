@@ -12,13 +12,13 @@ This is a self-contained demo. In production you would persist data (DB/JSON).
 """
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Annotated
 
 from dotenv import load_dotenv
 
 from discordkit import Client, Config
-from discordkit.commands import Option, command, group
+from discordkit.commands import Option, group
 from discordkit.core.context import CommandContext
 from discordkit.models import User
 from discordkit.types import Intents
@@ -48,6 +48,7 @@ bot = Client(config)
 
 
 # --- Economy Group with subcommands ---
+
 
 @group(name="economy", description="Economy and currency commands")
 async def economy_group(ctx: CommandContext):
@@ -100,6 +101,7 @@ async def economy_give(
 
 
 # --- Levels Group ---
+
 
 @group(name="levels", description="XP and leveling system")
 async def levels_group(ctx: CommandContext):

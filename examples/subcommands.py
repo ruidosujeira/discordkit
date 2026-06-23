@@ -11,13 +11,14 @@ This demonstrates:
 Run:
     DISCORD_TOKEN=... python examples/subcommands.py
 """
+
 import os
 from typing import Annotated
 
 from dotenv import load_dotenv
 
 from discordkit import Client, Config
-from discordkit.commands import Option, command, group
+from discordkit.commands import Option, group
 from discordkit.core.context import CommandContext
 from discordkit.models import User
 from discordkit.types import Intents
@@ -31,6 +32,7 @@ bot = Client(config)
 # ------------------------------------------------------------------
 # Example 1: Simple group with subcommands
 # ------------------------------------------------------------------
+
 
 @group(name="config", description="Manage server configuration")
 async def config_group(ctx: CommandContext):
@@ -59,6 +61,7 @@ async def config_get(
 # Example 2: Nested groups (group inside a group)
 # ------------------------------------------------------------------
 
+
 @config_group.group(name="advanced", description="Advanced / dangerous configuration options")
 async def advanced_group(ctx: CommandContext):
     await ctx.respond("Use a subcommand under `advanced`.")
@@ -71,7 +74,9 @@ async def advanced_reset(
     confirm: Annotated[bool, Option("Type true to confirm")] = False,
 ):
     if not confirm:
-        await ctx.respond("⚠️ You must set `confirm: true` to reset advanced settings.", ephemeral=True)
+        await ctx.respond(
+            "⚠️ You must set `confirm: true` to reset advanced settings.", ephemeral=True
+        )
         return
     await ctx.respond(f"🔄 Advanced setting `{setting}` has been reset to defaults (demo).")
 
@@ -79,6 +84,7 @@ async def advanced_reset(
 # ------------------------------------------------------------------
 # Example 3: Top-level group with complex options in subcommand
 # ------------------------------------------------------------------
+
 
 @group(name="admin", description="Administrative actions")
 async def admin_group(ctx: CommandContext):
@@ -90,7 +96,9 @@ async def admin_ban(
     ctx: CommandContext,
     user: Annotated[User, Option("The user to ban")],
     reason: Annotated[str, Option("Reason for the ban", min_length=5, max_length=400)],
-    delete_days: Annotated[int, Option("Delete messages from the last N days", min_value=0, max_value=7)] = 0,
+    delete_days: Annotated[
+        int, Option("Delete messages from the last N days", min_value=0, max_value=7)
+    ] = 0,
 ):
     await ctx.respond(
         f"🚫 Banned {user.mention} for **{reason}** (would delete last {delete_days} days of messages in a real implementation)."

@@ -126,7 +126,7 @@ class InteractionContext:
         """Send a followup message (works after respond or defer)."""
         if not self.interaction_token:
             if self.channel_id:
-                return await self.http.request(
+                return await self.http.request(  # type: ignore[no-any-return]
                     "POST",
                     f"/channels/{self.channel_id}/messages",
                     json={"content": content},
@@ -139,7 +139,7 @@ class InteractionContext:
         if ephemeral:
             body["flags"] = 64
 
-        return await self.http.request(
+        return await self.http.request(  # type: ignore[no-any-return]
             "POST",
             f"/webhooks/{self.client.application_id}/{self.interaction_token}",
             json=body,

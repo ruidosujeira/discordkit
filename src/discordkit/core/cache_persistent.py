@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any
 
 from ..models import Channel, Guild, Member, User
+from ..models.base import DiscordModel
 from .cache import (
     ENTITY_CHANNEL,
     ENTITY_GENERIC,
@@ -42,7 +43,7 @@ from .cache import (
 )
 
 # Pydantic model registry for typed entity deserialization.
-_ENTITY_MODELS: dict[str, type] = {
+_ENTITY_MODELS: dict[str, type[DiscordModel]] = {
     ENTITY_USER: User,
     ENTITY_MEMBER: Member,
     ENTITY_GUILD: Guild,
@@ -102,7 +103,7 @@ class PersistentCache(MemoryCache):
     def __init__(
         self,
         path: str | Path = ".discordkit_cache.db",
-        default_ttl: float = 300.0,
+        default_ttl: float | None = 300.0,
         *,
         max_size: int | None = None,
         eviction_policy: EvictionPolicy = EvictionPolicy.LRU,
@@ -137,7 +138,7 @@ class PersistentCache(MemoryCache):
             return json.dumps(value)
         model = _ENTITY_MODELS.get(entity_type)
         if model is not None and isinstance(value, model):
-            return value.model_dump_json()  # type: ignore[no-any-return,attr-defined]
+            return value.model_dump_json()
         raise TypeError(f"Cannot serialize {type(value)!r} for entity type {entity_type!r}")
 
     def _deserialize(self, entity_type: str, raw: str) -> Any:

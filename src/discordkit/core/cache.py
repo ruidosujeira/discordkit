@@ -365,17 +365,17 @@ class MemoryCache(CacheBackend):
 
     def __init__(
         self,
-        default_ttl: float = 300.0,
+        default_ttl: float | None = 300.0,
         *,
         max_size: int | None = None,
         eviction_policy: EvictionPolicy = EvictionPolicy.LRU,
         touch_on_read: bool = False,
         ttl_by_type: dict[str, float] | None = None,
     ) -> None:
-        if default_ttl is None:
-            self.default_ttl = None
+        if default_ttl is None or default_ttl <= 0:
+            self.default_ttl: float | None = None
         else:
-            self.default_ttl = default_ttl if default_ttl > 0 else None
+            self.default_ttl = default_ttl
         self.max_size = max_size
         self.eviction_policy = eviction_policy
         self.touch_on_read = touch_on_read
@@ -416,13 +416,14 @@ class MemoryCache(CacheBackend):
         return entry.expires_at is not None and self._now() >= entry.expires_at
 
     def _store_for_type(self, entity_type: str) -> dict[Any, _CacheEntry[Any]]:
-        return {
+        stores: dict[str, dict[Any, _CacheEntry[Any]]] = {
             ENTITY_USER: self._users,
             ENTITY_MEMBER: self._members,
             ENTITY_GUILD: self._guilds,
             ENTITY_CHANNEL: self._channels,
             ENTITY_GENERIC: self._generic,
-        }[entity_type]
+        }
+        return stores[entity_type]
 
     def _remove_entry(self, cache_key: CacheKey) -> bool:
         """Remove an entry by cache key. Returns whether it existed."""
@@ -637,7 +638,7 @@ class MemoryCache(CacheBackend):
                     self._touch_entry(ENTITY_GENERIC, key, entry)
                 else:
                     self._record_access(ENTITY_GENERIC, key)
-                return entry.value
+                return entry.value  # type: ignore[no-any-return]
 
             value = getter()
             if value is not None:
@@ -768,6 +769,7 @@ class MemoryCache(CacheBackend):
     def invalidate_by_type(self, type_name: str) -> int:
         type_name = type_name.lower()
         with self._lock:
+            keys: list[Any]
             if type_name == ENTITY_USER:
                 keys = list(self._users.keys())
             elif type_name == ENTITY_MEMBER:

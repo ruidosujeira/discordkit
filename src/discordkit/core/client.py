@@ -17,7 +17,7 @@ import asyncio
 import inspect
 import logging
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import Any, TypeVar, overload
 
 from ..commands.registry import CommandRegistry
 from ..commands.resolver import resolve_options
@@ -540,11 +540,26 @@ class Client:
 
         return decorator
 
+    @overload
     def error_handler(
-        self, func: Callable[[Exception, dict[str, Any]], Any] | None = None
+        self, func: None = None
     ) -> Callable[
         [Callable[[Exception, dict[str, Any]], Any]], Callable[[Exception, dict[str, Any]], Any]
-    ]:
+    ]: ...
+
+    @overload
+    def error_handler(
+        self, func: Callable[[Exception, dict[str, Any]], Any]
+    ) -> Callable[[Exception, dict[str, Any]], Any]: ...
+
+    def error_handler(
+        self, func: Callable[[Exception, dict[str, Any]], Any] | None = None
+    ) -> (
+        Callable[[Exception, dict[str, Any]], Any]
+        | Callable[
+            [Callable[[Exception, dict[str, Any]], Any]], Callable[[Exception, dict[str, Any]], Any]
+        ]
+    ):
         """Register a global error handler.
 
         Can be used as decorator or method:

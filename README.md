@@ -1,5 +1,11 @@
 # DiscordKit
 
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/ruidosujeira/discordkit/actions/workflows/ci.yml/badge.svg)](https://github.com/ruidosujeira/discordkit/actions/workflows/ci.yml)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Mypy](https://img.shields.io/badge/mypy-strict-2a6db2?logo=python)](https://mypy-lang.org/)
+
 **A modern, strongly-typed Python framework for Discord bots with excellent Developer Experience.**
 
 DiscordKit is a fresh, from-the-ground-up framework focused on **clarity, type safety, and joy of use** — without the legacy baggage or heavy magic of older libraries.
